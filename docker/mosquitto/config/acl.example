@@ -1,0 +1,12 @@
+# Aqua OS Production MQTT Access Control List (ACL)
+# Enforces farm-level data isolation at the broker boundary.
+
+# Pattern rule: Authenticated client (%u = username / certificate CN)
+# can only publish and subscribe to its own farm topic hierarchy:
+pattern readwrite aqua/%u/#
+
+# Central backend platform service can read all farm telemetry and publish control commands:
+user aqua_central_platform
+topic read aqua/+/+/telemetry
+topic write aqua/+/+/control
+

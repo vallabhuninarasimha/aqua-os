@@ -1,0 +1,44 @@
+# Aqua OS Local Infrastructure Stack (Milestone 1)
+# Strictly scoped to justified components: TimescaleDB and Mosquitto MQTT broker.
+# No premature distributed caching or clustering services.
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: aqua-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aqua
+      POSTGRES_PASSWORD: aqua_secure_dev
+      POSTGRES_DB: aqua_os
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aqua -d aqua_os"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: aqua-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i 'healthcheck' || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  timescaledb_data:
+    driver: local
+  mosquitto_data:
+    driver: local
+

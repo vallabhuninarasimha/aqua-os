@@ -1,0 +1,78 @@
+"""FastAPI security dependencies enforcing authentication, RBAC, and farm isolation."""
+
+from typing import Callable, Optional
+
+from fastapi import Depends, Header, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from apps.api.src.dependencies import get_db_session
+from apps.api.src.security.interfaces import IIdentityProvider
+from apps.api.src.security.jwt_provider import LocalJWTIdentityProvider
+from apps.api.src.security.models import Permission, UserIdentity
+
+
+def get_identity_provider(
+    session: Session = Depends(get_db_session),
+) -> IIdentityProvider:
+    """Inject configured identity provider."""
+    return LocalJWTIdentityProvider(session)
+
+
+def get_current_user(
+    authorization: Optional[str] = Header(None, description="Bearer token"),
+    token: Optional[str] = Query(None, description="Token query parameter for SSE/WebSocket"),
+    identity_provider: IIdentityProvider = Depends(get_identity_provider),
+) -> UserIdentity:
+    """Authenticate incoming request via Bearer header or token query parameter."""
+    raw_token: Optional[str] = None
+    if authorization and authorization.startswith("Bearer "):
+        raw_token = authorization.split(" ", 1)[1].strip()
+    elif token:
+        raw_token = token.strip()
+
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or malformed Bearer authorization token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = identity_provider.verify_access_token(raw_token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid, expired, or revoked access token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+def require_permission(permission: Permission | str) -> Callable[[UserIdentity], UserIdentity]:
+    """Factory creating dependency enforcing specific permission check."""
+
+    def _dependency(user: UserIdentity = Depends(get_current_user)) -> UserIdentity:
+        perm_str = permission.value if hasattr(permission, "value") else str(permission)
+        if not user.has_permission(permission):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: Requires '{perm_str}' permission.",
+            )
+        return user
+
+    return _dependency
+
+
+def verify_farm_access(user: UserIdentity, target_farm_id: str) -> None:
+    """Enforce farm-level data isolation.
+
+    Prevents cross-farm data tampering. System administrators have global access.
+    """
+    if not user.can_access_farm(target_farm_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"Cross-farm access forbidden: User belongs to farm '{user.farm_id}', "
+                f"cannot access or modify farm '{target_farm_id}'."
+            ),
+        )
+
