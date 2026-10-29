@@ -28,5 +28,43 @@
   function action(name){const map={alerts:['Recent alerts','Sample alert list only. No notification service is connected.'],scan:['Shrimp scan preview','Image upload and AI analysis are not connected yet.'],report:['Report an issue','Issue logging will be connected after the UI is approved.'],emergency:['Emergency contact','This preview cannot place calls or contact farm staff. Configure and verify real emergency contacts before production.'],manual:['Manual control','Hardware commands are intentionally disabled in this UI-only phase.'],settings:['Pond settings','Settings are not persisted or connected to a backend yet.'],history:['Action history','No real actuator action history is connected.']};openModal(...(map[name]||['Preview action','This feature is not connected in the UI prototype.']))}
   document.addEventListener('click',e=>{const view=e.target.closest('[data-view]');if(view){showView(view.dataset.view);return}const pond=e.target.closest('[data-open-pond]');if(pond){selectedPond=Number(pond.dataset.openPond);showView('pond');return}const task=e.target.closest('[data-task]');if(task){tasks[Number(task.dataset.task)].done=!tasks[Number(task.dataset.task)].done;renderTasks();return}const eq=e.target.closest('[data-equipment]');if(eq){const item=equipment[Number(eq.dataset.equipment)];item.on=!item.on;renderEquipment();toast(`${item.name}: preview state ${item.on?'ON':'OFF'} — no hardware command sent.`);return}const chart=e.target.closest('[data-chart]');if(chart){chartType=chart.dataset.chart;$$('[data-chart]').forEach(b=>b.classList.toggle('active',b===chart));drawChart();return}const a=e.target.closest('[data-action]');if(a){action(a.dataset.action);return}});
   $('#pondSearch').addEventListener('input',renderTable);$('#pondFilter').addEventListener('change',renderTable);$('#period').addEventListener('change',()=>toast('This is sample trend data; date range does not request backend data.'));$('#micButton').addEventListener('click',()=>{ $('#micTitle').textContent='Voice service not connected';$('#micHint').textContent='This UI-only preview does not access your microphone or run speech recognition.';toast('Voice assistant is a visual placeholder in this phase.')});$('#modalClose').addEventListener('click',()=>$('#modal').hidden=true);$('#modalOk').addEventListener('click',()=>$('#modal').hidden=true);$('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))$('#modal').hidden=true});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#modal').hidden=true});
+
+  // Hardware-free simulation lab. It changes only in-memory mock readings; it never calls actuator APIs.
+  let simulationTimer=null,simulationSteps=0,activeScenario='baseline';
+  function updateSimulationStatus(state,text){const el=$('#simStatus');el.className='sim-status '+state;el.querySelector('span').textContent=text}
+  function renderSimulationInsight(title,message,level=''){const el=$('#simInsight');el.className='sim-insight '+level;el.querySelector('b').textContent=title;el.querySelector('p').textContent=message}
+  function applyMockScenario(stepOnly=false){
+    const scenario=$('#scenarioSelect').value,target=Number($('#scenarioTank').value);
+    activeScenario=scenario;simulationSteps++;
+    ponds.forEach(p=>{
+      if(scenario==='baseline'){p.do=Math.max(5.8,Math.min(7.2,p.do+(Math.random()-.5)*.24));p.temp=Math.max(27,Math.min(29.2,p.temp+(Math.random()-.5)*.18));p.ageMin=0;p.sensor='connected';}
+      else if(p.n===target){
+        if(scenario==='low-do'){p.do=Math.max(2.7,p.do-(stepOnly?.45:1.0));p.status=p.do<4?'critical':'watch';p.ageMin=0;p.sensor='connected';}
+        if(scenario==='heat'){p.temp=Math.min(34,p.temp+(stepOnly?.3:.8));p.status=p.temp>=31?'critical':'watch';p.ageMin=0;p.sensor='connected';}
+        if(scenario==='sensor-loss'){p.ageMin=30;p.sensor='stale';p.status='watch';}
+        if(scenario==='aerator-fault'){p.do=Math.max(3.2,p.do-(stepOnly?.35:.65));p.status=p.do<4.5?'critical':'watch';p.ageMin=0;p.sensor='connected';}
+      }
+      if(scenario==='baseline'&&p.do>=5.5&&p.temp<30)p.status='normal';
+      p.source='SIMULATED';
+    });
+    renderPonds();renderTable();renderPond();drawChart();drawPondChart();
+    $('#simStepCount').textContent=simulationSteps+' simulation step'+(simulationSteps===1?'':'s');
+    const p=ponds.find(x=>x.n===target);
+    const insight={
+      baseline:['AI operations advisor','Synthetic readings are stable in this scenario. Continue routine monitoring; this is not a farm-specific biological recommendation.',''],
+      'low-do':['High-risk oxygen scenario',p.name+': simulated DO is '+p.do.toFixed(1)+' mg/L. Operator workflow: verify the reading, inspect aerator/power status and follow the farm-approved emergency SOP. Physical aerator control is disabled.','risk'],
+      heat:['Temperature risk scenario',p.name+': simulated temperature is '+p.temp.toFixed(1)+'°C. Verify with an independent instrument, review trend and consult the farm’s approved response plan.','caution'],
+      'sensor-loss':['Telemetry unavailable',p.name+': sample age is marked stale. The system must not infer safe conditions from missing data. Check power, wiring and sensor status; no automatic physical action is sent.','caution'],
+      'aerator-fault':['Equipment fault simulation',p.name+': synthetic aerator fault with DO at '+p.do.toFixed(1)+' mg/L. Raise an operator alert and verify equipment feedback before any approved intervention. No hardware command is sent.','risk']
+    }[scenario];
+    renderSimulationInsight(insight[0],insight[1],insight[2]);
+    updateSimulationStatus(scenario==='baseline'?'running':insight[2]==='risk'?'alert':'running',scenario==='baseline'?'Simulation running':scenario.replace('-',' ').toUpperCase()+' · MOCK');
+  }
+  function stopSimulation(){if(simulationTimer){clearInterval(simulationTimer);simulationTimer=null;}updateSimulationStatus('', 'Simulation paused');}
+  $('#runSimulation')?.addEventListener('click',()=>{if(simulationTimer){stopSimulation();$('#runSimulation').textContent='▶ Run simulation';toast('Simulation paused. No hardware was controlled.');return;}applyMockScenario();simulationTimer=setInterval(()=>applyMockScenario(),2500);$('#runSimulation').textContent='Ⅱ Pause simulation';toast('Mock simulation running. Synthetic data only.');});
+  $('#stepSimulation')?.addEventListener('click',()=>{if(simulationTimer)stopSimulation();applyMockScenario(true);$('#runSimulation').textContent='▶ Run simulation';toast('Advanced one mock simulation step.');});
+  $('#resetSimulation')?.addEventListener('click',()=>{stopSimulation();simulationSteps=0;const defaults=[{do:6.8,temp:28.1,ph:7.8,salinity:40,status:'normal',sensor:'connected',ageMin:2},{do:4.9,temp:29.4,ph:7.8,salinity:42,status:'critical',sensor:'connected',ageMin:2},{do:5.8,temp:29.1,ph:7.6,salinity:41,status:'watch',sensor:'connected',ageMin:4},{do:6.9,temp:28.0,ph:7.9,salinity:40,status:'normal',sensor:'stale',ageMin:18}];ponds.forEach((p,i)=>Object.assign(p,defaults[i],{source:'SIMULATED'}));$('#simStepCount').textContent='0 simulation steps';$('#runSimulation').textContent='▶ Run simulation';renderPonds();renderTable();renderPond();drawChart();drawPondChart();renderSimulationInsight('AI operations advisor','Simulation reset to the baseline synthetic dataset. Select a scenario to explore alerts and operator workflows.');toast('Mock readings reset. No hardware was controlled.');});
+  $('#scenarioSelect')?.addEventListener('change',()=>{if(simulationTimer){stopSimulation();$('#runSimulation').textContent='▶ Run simulation';}renderSimulationInsight('Scenario selected','Press Run simulation or Step +1 to generate clearly labelled synthetic readings. Physical equipment remains disabled.');});
+
   renderPonds();renderTable();renderTasks();renderEquipment();renderPond();drawChart();drawPondChart();const updateClock=()=>{const d=new Date();$('#clock').innerHTML=d.toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'})+'<br><small>'+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</small>'};updateClock();setInterval(updateClock,60000);let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{drawChart();drawPondChart()},100)});
 })();
