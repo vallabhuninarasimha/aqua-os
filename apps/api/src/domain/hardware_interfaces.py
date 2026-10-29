@@ -118,6 +118,14 @@ class TransformerPowerStatus(BaseModel):
     headroom_kw: float
     running_aerator_count: int
     overload_warning: bool = False
+    capacity_status: str = "CONFIGURED_RATING"  # CONFIGURED_RATING, UNCONFIGURED, UNKNOWN
+    load_confidence: str = "ESTIMATED"  # NAMEPLATE_ESTIMATE, MEASURED_EQUIPMENT_SUM, UNVERIFIED_EQUIPMENT_STATE, UNKNOWN, STALE
+    headroom_confidence: str = "THEORETICAL_ESTIMATE"  # THEORETICAL_ESTIMATE, UNCONFIGURED, UNKNOWN
+    is_field_verified: bool = False
+    headroom_disclaimer: str = (
+        "Theoretical calculation (80% continuous limit minus estimated equipment load). "
+        "Not confirmed field utility capacity."
+    )
 
 
 # ============================================================================
@@ -215,11 +223,15 @@ class IAlertService(Protocol):
         """Raise new alert or update existing active alert deduplicating entries."""
         ...
 
-    def acknowledge(self, alert_id: str, acknowledged_by: str) -> Optional[Any]:
+    def acknowledge(
+        self, alert_id: str, acknowledged_by: str, farm_id: Optional[str] = None
+    ) -> Optional[Any]:
         """Transition alert to ACKNOWLEDGED."""
         ...
 
-    def resolve(self, alert_id: str, resolved_by: str) -> Optional[Any]:
+    def resolve(
+        self, alert_id: str, resolved_by: str, farm_id: Optional[str] = None
+    ) -> Optional[Any]:
         """Transition alert to RESOLVED."""
         ...
 

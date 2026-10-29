@@ -1,0 +1,22 @@
+Aqua OS UI refinement — 2026-10-11
+
+Changed:
+- apps/dashboard/index.html
+  - Removed unsupported hardcoded KPI captions and category-card counts/status claims from Farm Overview.
+  - Replaced those with neutral labels that don't imply unverified live equipment/batch counts.
+- apps/dashboard/css/dashboard.css
+  - Added a cohesive commercial light UI layer with a deep-ocean sidebar, teal accent, clearer hierarchy, cleaner cards/tables/forms, responsive spacing, and consistent surfaces.
+  - Harmonized legacy dark inline panels and controls with the light theme.
+- apps/dashboard/js/dashboard.js
+  - Not modified. Existing one-section-at-a-time router preserved.
+
+Checks:
+- dashboard.js and api.js passed `node --check`.
+- CSS braces balanced.
+- 12 page sections found; navigation targets resolve; no duplicate HTML IDs found.
+
+Not done:
+- No app/server/browser launched.
+- No full test suite or build run.
+- No backend, database, farm data, or hardware-control behavior changed.
+- Browser visual verification remains pending.

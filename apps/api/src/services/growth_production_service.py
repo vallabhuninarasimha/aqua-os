@@ -18,6 +18,10 @@ from apps.api.src.domain.growth_engine import (
     calculate_estimated_biomass,
     calculate_fcr,
     calculate_harvest_projections,
+    calculate_sgr,
+    calculate_surviving_population_detail,
+    calculate_detailed_biomass,
+    calculate_advanced_harvest_forecast,
 )
 from apps.api.src.infrastructure.repositories.sql_pond_records_repository import SQLPondRecordsRepository
 from apps.api.src.infrastructure.repositories.sql_pond_repository import SQLPondRepository
@@ -69,10 +73,13 @@ class GrowthProductionService:
         return self._records_repo.record_growth_sample(sample_data)
 
     def list_samplings(
-        self, batch_id: Optional[str] = None, pond_id: Optional[str] = None
+        self,
+        batch_id: Optional[str] = None,
+        pond_id: Optional[str] = None,
+        farm_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        """Retrieve chronological sampling data for growth charts."""
-        return self._records_repo.list_growth_samples(batch_id=batch_id, pond_id=pond_id)
+        """Retrieve chronological sampling data for growth charts scoped by farm."""
+        return self._records_repo.list_growth_samples(batch_id=batch_id, pond_id=pond_id, farm_id=farm_id)
 
     def get_pond_production_intelligence(self, farm_id: str, pond_id: str) -> Dict[str, Any]:
         """Get comprehensive intelligence bundle for single pond."""
@@ -122,6 +129,7 @@ class GrowthProductionService:
         batch_id: Optional[str] = None,
         feeding_event_count: int = 1,
         timestamp: Optional[datetime] = None,
+        product_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Record manual feeding application with validations and duplicate protection."""
         return self._records_repo.log_feeding(
@@ -136,6 +144,7 @@ class GrowthProductionService:
             batch_id=batch_id,
             feeding_event_count=feeding_event_count,
             timestamp=timestamp,
+            product_id=product_id,
         )
 
     def list_feeding_history(
@@ -199,6 +208,7 @@ class GrowthProductionService:
         total_biomass_kg = 0.0
         total_initial_biomass_kg = 0.0
         total_cumulative_feed_kg = 0.0
+        total_harvested_biomass_kg = 0.0
         total_live_shrimp = 0
         sum_abw = 0.0
         sum_doc = 0
@@ -214,13 +224,15 @@ class GrowthProductionService:
                 b_kg = batch.get("estimated_biomass_kg", 0.0)
                 init_b = batch.get("initial_biomass_kg", 7.5)
                 feed_kg = summary.get("cumulative_feed_kg", 0.0)
+                harvested_b = summary.get("harvest_summary", {}).get("total_harvested_kg", 0.0) or (batch.get("harvested_biomass_kg") or 0.0)
                 abw = batch.get("avg_body_weight_g", 0.0)
                 doc = batch.get("days_of_culture", 1)
-                pop = int(batch.get("initial_count", 150000) * (batch.get("estimated_survival_pct", 82) / 100.0))
+                pop = summary.get("biomass_detail", {}).get("surviving_count") or int(batch.get("initial_count", 150000) * (batch.get("estimated_survival_pct", 82) / 100.0))
 
                 total_biomass_kg += b_kg
                 total_initial_biomass_kg += init_b
                 total_cumulative_feed_kg += feed_kg
+                total_harvested_biomass_kg += harvested_b
                 total_live_shrimp += pop
                 sum_abw += abw
                 sum_doc += doc
@@ -234,11 +246,14 @@ class GrowthProductionService:
                     "doc": doc,
                     "abw_g": abw,
                     "adg_g_per_day": summary.get("adg_g_per_day"),
+                    "sgr_pct_per_day": summary.get("sgr_pct_per_day"),
                     "estimated_survival_pct": batch.get("estimated_survival_pct"),
                     "estimated_biomass_kg": b_kg,
                     "cumulative_feed_kg": feed_kg,
+                    "harvested_biomass_kg": harvested_b,
                     "production_fcr": summary.get("fcr_analysis", {}).get("production_fcr"),
                     "is_sample_stale": summary.get("is_sample_stale"),
+                    "quality_status": summary.get("biomass_detail", {}).get("status_quality", "UNVALIDATED_BASELINE"),
                 })
 
         avg_abw = round(sum_abw / active_batch_count, 2) if active_batch_count > 0 else 0.0
@@ -249,6 +264,7 @@ class GrowthProductionService:
             cumulative_feed_kg=total_cumulative_feed_kg,
             current_biomass_kg=total_biomass_kg,
             initial_biomass_kg=total_initial_biomass_kg,
+            harvested_biomass_kg=total_harvested_biomass_kg,
             calculation_period_label="Farm Active Batches Aggregated",
         )
 
@@ -258,6 +274,7 @@ class GrowthProductionService:
             "total_estimated_biomass_kg": round(total_biomass_kg, 2),
             "total_live_shrimp_count": total_live_shrimp,
             "total_cumulative_feed_kg": round(total_cumulative_feed_kg, 2),
+            "total_harvested_biomass_kg": round(total_harvested_biomass_kg, 2),
             "farm_average_abw_g": avg_abw,
             "farm_average_doc": avg_doc,
             "farm_production_fcr": farm_fcr_res.model_dump(),
@@ -266,4 +283,96 @@ class GrowthProductionService:
             "ponds": pond_summaries,
             "biomass_estimation_notice": "All biomass figures are mathematical estimates derived from sample ABW and survival fraction, not direct whole-pond weigh-ins.",
         }
+
+    # -------------------------------------------------------------------------
+    # Dedicated Biomass & Harvest Forecasting
+    # -------------------------------------------------------------------------
+
+    def get_biomass_estimation(self, farm_id: str, pond_id: str) -> Dict[str, Any]:
+        """Dedicated biomass estimation service with quality status and bounds checking."""
+        summary = self.get_pond_production_intelligence(farm_id, pond_id)
+        if not summary.get("has_active_batch"):
+            return {
+                "pond_id": pond_id,
+                "has_active_batch": False,
+                "status_quality": "NEEDS_DATA",
+                "biomass_detail": None,
+                "notice": "No active batch for this pond.",
+            }
+        return {
+            "pond_id": pond_id,
+            "has_active_batch": True,
+            "batch_id": summary.get("batch", {}).get("batch_id"),
+            "status_quality": summary.get("biomass_detail", {}).get("status_quality", "UNVALIDATED_BASELINE"),
+            "biomass_detail": summary.get("biomass_detail"),
+            "latest_sample": summary.get("latest_sample"),
+            "days_since_sample": summary.get("days_since_sample"),
+            "is_sample_stale": summary.get("is_sample_stale"),
+        }
+
+    def get_harvest_forecast(self, farm_id: str, pond_id: str) -> Dict[str, Any]:
+        """Advisory harvest forecasting using validated batch data and growth trajectory."""
+        summary = self.get_pond_production_intelligence(farm_id, pond_id)
+        if not summary.get("has_active_batch"):
+            return {
+                "pond_id": pond_id,
+                "has_active_batch": False,
+                "status_label": "NEEDS_DATA",
+                "forecast": None,
+                "advisory_notes": ["No active batch found for pond."],
+            }
+        return {
+            "pond_id": pond_id,
+            "has_active_batch": True,
+            "batch_id": summary.get("batch", {}).get("batch_id"),
+            "forecast": summary.get("advanced_harvest_forecast"),
+            "adg_g_per_day": summary.get("adg_g_per_day"),
+            "sgr_pct_per_day": summary.get("sgr_pct_per_day"),
+            "harvest_summary": summary.get("harvest_summary"),
+        }
+
+    # -------------------------------------------------------------------------
+    # Harvest Recording & Ledger Workflows
+    # -------------------------------------------------------------------------
+
+    def record_harvest(self, harvest_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Record partial or final harvest with yield, grading, revenue, and idempotency protection."""
+        return self._records_repo.record_harvest(harvest_data)
+
+    def list_harvests(
+        self,
+        farm_id: str,
+        pond_id: Optional[str] = None,
+        batch_id: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """List historical harvest event records."""
+        return self._records_repo.list_harvest_records(
+            farm_id=farm_id, pond_id=pond_id, batch_id=batch_id, limit=limit
+        )
+
+    def get_batch_lifecycle(self, batch_id: str) -> Optional[Dict[str, Any]]:
+        """Get comprehensive lifecycle tracking for a specific batch."""
+        return self._records_repo.get_batch_lifecycle(batch_id)
+
+    def list_batches_readiness(
+        self,
+        farm_id: str,
+        pond_id: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """List batches across farm or pond with calculated harvest readiness and confidence states."""
+        return self._records_repo.list_batches_readiness(farm_id=farm_id, pond_id=pond_id, status=status)
+
+    def get_batch_economics(self, batch_id: str, farm_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Retrieve verified batch economics, attributable costs, and profitability completeness status."""
+        return self._records_repo.get_batch_economics(batch_id=batch_id, farm_id=farm_id)
+
+    def get_farm_economics_summary(
+        self, farm_id: str, pond_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Retrieve farm-level economics and attributable profitability rollup."""
+        return self._records_repo.get_farm_economics_summary(farm_id=farm_id, pond_id=pond_id)
+
+
 

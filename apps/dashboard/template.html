@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aqua OS Pro — Threatrix SOC Cyber-Physical Live Tracing & Farm Twin</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes spinPaddle {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-paddle {
+      animation: spinPaddle 2.2s linear infinite;
+    }
+    @keyframes radarSweep {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .radar-beam {
+      transform-origin: 480px 240px;
+      animation: radarSweep 8s linear infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.18); }
+    }
+    .pulse-ring {
+      animation: pulseGlow 2.5s ease-in-out infinite;
+    }
+    @keyframes streamDash {
+      to { stroke-dashoffset: -40; }
+    }
+    .trace-cyan {
+      stroke-dasharray: 8 6;
+      animation: streamDash 1.2s linear infinite;
+    }
+    .trace-emerald {
+      stroke-dasharray: 6 5;
+      animation: streamDash 1.5s linear infinite;
+    }
+    .trace-rose {
+      stroke-dasharray: 10 4;
+      animation: streamDash 0.6s linear infinite;
+    }
+    .trace-amber {
+      stroke-dasharray: 8 5;
+      animation: streamDash 0.9s linear infinite;
+    }
+    /* Monospace Terminal Styling */
+    .soc-terminal-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(6, 182, 212, 0.3) transparent;
+    }
+    .soc-terminal-scroll::-webkit-scrollbar { width: 5px; }
+    .soc-terminal-scroll::-webkit-scrollbar-thumb { background: rgba(6, 182, 212, 0.3); border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased font-sans selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- ================= TOP COMMAND BAR ================= -->
+  <header class="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/85 border-b border-slate-800/80 px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Farm Selector -->
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 p-0.5 shadow-lg shadow-cyan-500/20 flex items-center justify-center">
+          <div class="h-full w-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+            <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
+              AQUA <span class="text-cyan-400">OS</span>
+              <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/60 font-semibold tracking-normal">SOC PRO</span>
+            </h1>
+            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/70 border border-emerald-800/50 px-2 py-0.5 rounded-full">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Live Threatrix Tracing
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-medium">Sri Krishna Aqua Estate &bull; 8 Ponds (Bapatla, AP)</p>
+        </div>
+      </div>
+
+      <!-- Quick Executive Ticker -->
+      <div class="hidden md:flex items-center gap-6 text-xs bg-slate-900/90 border border-slate-800 px-4 py-2 rounded-xl shadow-inner">
+        <div>
+          <div class="text-[11px] text-slate-400 font-medium">Telemetry Vectors</div>
+          <div class="font-bold text-cyan-400 text-sm flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> 42 Active
+          </div>
+        </div>
+        <div class="h-7 w-px bg-slate-800"></div>
+        <div>
+          <div class="text-[11px] text-slate-400 font-medium">Mesh Packet Health</div>
+          <div class="font-bold text-emerald-400 text-sm">99.8% <span class="text-xs text-slate-400 font-normal">0 drops</span></div>
+        </div>
+        <div class="h-7 w-px bg-slate-800"></div>
+        <div>
+          <div class="text-[11px] text-slate-400 font-medium">Grid Power (58 kW)</div>
+          <div class="font-bold text-white text-sm">18/24 <span class="text-xs text-slate-400 font-normal">Motors</span></div>
+        </div>
+      </div>
+
+      <!-- 3-WAY VIEW SWITCHER (LAPTOP | SOC TRACING | MOBILE) -->
+      <div class="flex items-center gap-2">
+        <div class="bg-slate-900 p-1 rounded-xl border border-slate-800 flex items-center text-xs font-semibold">
+          <!-- Button 1: Threatrix Live SOC Tracing -->
+          <button id="btnTracingView" onclick="setViewMode('tracing')" class="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold shadow flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
+            </svg>
+            <span>🛰️ Live SOC Tracing</span>
+          </button>
+
+          <!-- Button 2: Pond Twin Cards (Laptop) -->
+          <button id="btnDesktopView" onclick="setViewMode('desktop')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span class="hidden sm:inline">Ponds Grid</span>
+          </button>
+
+          <!-- Button 3: Mobile Phone View -->
+          <button id="btnMobileView" onclick="setViewMode('mobile')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            <span class="hidden sm:inline">Mobile App</span>
+          </button>
+        </div>
+
+        <!-- Simulator Trigger Modal Button -->
+        <button onclick="toggleSimDrawer()" class="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-300 font-semibold text-xs flex items-center gap-1.5 transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span class="hidden sm:inline">Simulate Threat</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================= SECTION 1: THREATRIX LIVE SOC TRACING CONSOLE ================= -->
+  <section id="sectionSocTracing" class="max-w-7xl mx-auto px-4 lg:px-8 py-6">
+    
+    <!-- SOC Control Sub-Bar -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-cyan-950 border border-cyan-800/80 flex items-center justify-center text-cyan-400">
+          <svg class="w-5 h-5 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            Farm Cyber-Physical SOC &mdash; Real-Time Telemetry &amp; Vector Tracing
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold">1000% THREATRIX ENGINE</span>
+          </h2>
+          <p class="text-xs text-slate-400">Tracing physical water canals, 3-phase grid power vectors, and IoT LoRaWAN mesh packets in real time.</p>
+        </div>
+      </div>
+
+      <!-- Live Vector Trace Legend Filters -->
+      <div class="flex items-center gap-2 flex-wrap text-xs">
+        <span class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> ⚡ Power Lines
+        </span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-teal-400"></span> 💧 Canal Hydraulics
+        </span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> 📡 Optical DO Mesh
+        </span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-950 border border-rose-800/60 text-rose-400 flex items-center gap-1.5 font-bold animate-pulse">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> 🚨 Active Threat Vector (Pond A-2)
+        </span>
+      </div>
+    </div>
+
+    <!-- MAIN SOC GRID: TRACING MAP (LEFT) + LIVE INCIDENT TERMINAL (RIGHT) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- MAP PANEL (8 COLS) -->
+      <div class="lg:col-span-8 bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+        
+        <div class="flex items-center justify-between mb-3 z-10 relative">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">Farm Network Topology &bull; Live Vector Mesh</span>
+            <span class="text-[11px] font-mono text-slate-500">[LAT: 15.89° N, LON: 80.46° E]</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="injectThreatTrace()" class="px-3 py-1 rounded-lg bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 text-xs font-bold transition flex items-center gap-1.5">
+              <span>⚡ Trigger Anomaly Vector</span>
+            </button>
+            <button onclick="mitigateAllThreats()" class="px-3 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-bold transition flex items-center gap-1.5">
+              <span>🛡️ Auto-Mitigate</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- HIGH-TECH VECTOR SVG CANVAS -->
+        <div class="relative w-full h-[480px] bg-slate-950/90 rounded-2xl border border-slate-800/80 overflow-hidden shadow-inner flex items-center justify-center">
+          
+          <!-- Cyber Blueprint Grid Background -->
+          <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40"></div>
+          
+          <!-- Concentric Radar Rings -->
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-48 h-48 rounded-full border border-cyan-500/10"></div>
+            <div class="w-80 h-80 rounded-full border border-cyan-500/10"></div>
+            <div class="w-[440px] h-[440px] rounded-full border border-cyan-500/10"></div>
+          </div>
+
+          <!-- SVG Topology Graphic with Animated Moving Vector Traces -->
+          <svg class="w-full h-full relative z-10" viewBox="0 0 960 480" fill="none">
+            
+            <!-- Sweeping Radar Beam -->
+            <defs>
+              <linearGradient id="radarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+              </linearGradient>
+
+              <!-- Particle Markers for Tracing Streams -->
+              <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- Sweeping radar wedge -->
+            <path d="M 480 240 L 700 80 A 240 240 0 0 1 720 240 Z" fill="url(#radarGrad)" class="radar-beam pointer-events-none"/>
+
+            <!-- ================= VECTOR TRACE LINES ================= -->
+            
+            <!-- Trace 1: River Sluice Gate -> Main Reservoir (Hydraulics) -->
+            <path id="pathHydraulic1" d="M 120 100 L 260 100" stroke="#14b8a6" stroke-width="3" class="trace-emerald"/>
+            <!-- Trace 2: Reservoir -> Pond A-1 & Pond A-2 (Canal Feed) -->
+            <path id="pathHydraulic2" d="M 260 100 L 420 100 L 420 160 L 520 160" stroke="#14b8a6" stroke-width="2.5" class="trace-emerald"/>
+            <path id="pathHydraulic3" d="M 420 100 L 720 100 L 720 160 L 760 160" stroke="#14b8a6" stroke-width="2.5" class="trace-emerald"/>
+
+            <!-- Trace 3: Substation Transformer -> Edge Hub & Aerator Banks (Power Tracing) -->
+            <path id="pathPower1" d="M 120 380 L 280 380 L 280 260 L 380 260" stroke="#06b6d4" stroke-width="3" class="trace-cyan" filter="url(#glowCyan)"/>
+            <path id="pathPowerA1" d="M 380 260 L 520 200" stroke="#06b6d4" stroke-width="2.5" class="trace-cyan"/>
+            <path id="pathPowerB1" d="M 380 260 L 520 360" stroke="#06b6d4" stroke-width="2.5" class="trace-cyan"/>
+            <path id="pathPowerB2" d="M 380 260 L 760 360" stroke="#06b6d4" stroke-width="2.5" class="trace-cyan"/>
+
+            <!-- Trace 4: Active Threat / Anomaly Vector (Pond A-2 Low DO Threat Trace) -->
+            <path id="pathThreatA2" d="M 760 160 L 480 240" stroke="#f43f5e" stroke-width="3.5" class="trace-rose" filter="url(#glowCyan)"/>
+
+            <!-- ================= MOVING PHOTONS / PACKET TRACERS (<animateMotion>) ================= -->
+            <!-- Photon 1: Traveling along River -> Reservoir -->
+            <circle r="4" fill="#2dd4bf" filter="url(#glowCyan)">
+              <animateMotion dur="2s" repeatCount="indefinite">
+                <mpath href="#pathHydraulic1"/>
+              </animateMotion>
+            </circle>
+
+            <!-- Photon 2: Traveling along Power Line -> Pond A1 -->
+            <circle r="4" fill="#38bdf8" filter="url(#glowCyan)">
+              <animateMotion dur="1.8s" repeatCount="indefinite">
+                <mpath href="#pathPowerA1"/>
+              </animateMotion>
+            </circle>
+
+            <!-- Photon 3: Traveling along Threat Vector -> Edge Hub (Flashing Red) -->
+            <circle r="5" fill="#fda4af" filter="url(#glowCyan)">
+              <animateMotion dur="1s" repeatCount="indefinite">
+                <mpath href="#pathThreatA2"/>
+              </animateMotion>
+            </circle>
+
+            <!-- ================= TOPOLOGY NODES ================= -->
+
+            <!-- NODE 1: River Sluice Gate -->
+            <g class="cursor-pointer" onclick="showNodeHud('River Tidal Intake Gate', '180 L/s Flow', '14.2 ppt Salinity', 'STATUS: OPEN')">
+              <circle cx="120" cy="100" r="24" fill="#042f2e" stroke="#14b8a6" stroke-width="2.5"/>
+              <text x="120" y="104" text-anchor="middle" fill="#5eead4" font-size="10" font-weight="bold">INTAKE</text>
+              <text x="120" y="140" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600">River Canal Sluice</text>
+            </g>
+
+            <!-- NODE 2: Reservoir Sedimentation Basin -->
+            <g class="cursor-pointer" onclick="showNodeHud('Sedimentation Reservoir', 'Capacity: 12,000 m³', 'Water Clarified', 'STATUS: OPTIMAL')">
+              <circle cx="260" cy="100" r="26" fill="#042f2e" stroke="#14b8a6" stroke-width="2.5"/>
+              <text x="260" y="104" text-anchor="middle" fill="#5eead4" font-size="10" font-weight="bold">RESV</text>
+              <text x="260" y="140" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600">Bio-Sediment Basin</text>
+            </g>
+
+            <!-- NODE 3: Substation Transformer (100 kVA) -->
+            <g class="cursor-pointer" onclick="showNodeHud('100 kVA Transformer & DG Substation', '58 kW Active Load', '415V 3-Phase', 'STATUS: HEALTHY')">
+              <circle cx="120" cy="380" r="26" fill="#082f49" stroke="#06b6d4" stroke-width="2.5"/>
+              <text x="120" y="384" text-anchor="middle" fill="#7dd3fc" font-size="10" font-weight="bold">SUBST</text>
+              <text x="120" y="420" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600">100 kVA Substation</text>
+            </g>
+
+            <!-- NODE 4: Central Solar Edge Gateway & Local Server -->
+            <g class="cursor-pointer" onclick="showNodeHud('Central Solar Edge Gateway', 'LoRaWAN + 4G LTE', 'Latency: 12ms', 'STATUS: SOVEREIGN')">
+              <circle cx="480" cy="240" r="32" fill="#0f172a" stroke="#38bdf8" stroke-width="3" filter="url(#glowCyan)"/>
+              <circle cx="480" cy="240" r="42" fill="none" stroke="#38bdf8" stroke-width="1.5" class="pulse-ring"/>
+              <text x="480" y="244" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="bold">AQUA-SOC</text>
+              <text x="480" y="290" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="bold">Edge Mission Hub</text>
+            </g>
+
+            <!-- NODE 5: Pond A-1 (Growout Twin) -->
+            <g class="cursor-pointer" onclick="showNodeHud('Pond A-1 (North Canal)', 'DO: 6.4 mg/L', '46 Count | 21.8g', 'STATUS: OPTIMAL')">
+              <circle cx="560" cy="160" r="28" fill="#064e3b" stroke="#10b981" stroke-width="3"/>
+              <text x="560" y="164" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="bold">POND A1</text>
+              <text x="560" y="205" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="bold">DO 6.4 mg/L &bull; 46c</text>
+            </g>
+
+            <!-- NODE 6: Pond A-2 (ATTENTION: LOW DO THREAT VECTOR) -->
+            <g class="cursor-pointer" onclick="showNodeHud('Pond A-2 (East Bund)', 'DO: 3.6 mg/L (CRITICAL DROP)', 'Auto-Interlock Active', 'STATUS: ANOMALY FLAGGED')">
+              <circle cx="780" cy="160" r="30" fill="#4c0519" stroke="#f43f5e" stroke-width="3.5" filter="url(#glowCyan)"/>
+              <circle cx="780" cy="160" r="40" fill="none" stroke="#f43f5e" stroke-width="2" class="pulse-ring"/>
+              <text x="780" y="164" text-anchor="middle" fill="#fda4af" font-size="11" font-weight="bold">POND A2</text>
+              <text x="780" y="208" text-anchor="middle" fill="#fb7185" font-size="11" font-weight="bold">⚠️ DO 3.6 mg/L</text>
+            </g>
+
+            <!-- NODE 7: Pond B-1 (Harvest Jumbo) -->
+            <g class="cursor-pointer" onclick="showNodeHud('Pond B-1 (Jumbo Harvest)', 'DO: 5.8 mg/L', '30 Count | 33.5g', 'STATUS: ₹ HARVEST READY')">
+              <circle cx="560" cy="360" r="28" fill="#064e3b" stroke="#10b981" stroke-width="3"/>
+              <text x="560" y="364" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="bold">POND B1</text>
+              <text x="560" y="405" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="bold">DO 5.8 mg/L &bull; 30c</text>
+            </g>
+
+            <!-- NODE 8: Pond B-2 (Nursery Hub) -->
+            <g class="cursor-pointer" onclick="showNodeHud('Pond B-2 (Nursery Hub)', 'DO: 7.2 mg/L', 'PL-12 Nano-Bubbles', 'STATUS: NURSERY HEALTHY')">
+              <circle cx="780" cy="360" r="28" fill="#082f49" stroke="#06b6d4" stroke-width="3"/>
+              <text x="780" y="364" text-anchor="middle" fill="#7dd3fc" font-size="11" font-weight="bold">POND B2</text>
+              <text x="780" y="405" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="bold">DO 7.2 mg/L &bull; PL12</text>
+            </g>
+
+          </svg>
+
+          <!-- Interactive Node HUD Overlay (When a node is clicked) -->
+          <div id="nodeHudOverlay" class="absolute bottom-4 left-4 right-4 bg-slate-900/95 border border-cyan-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md flex items-center justify-between transition-all duration-300 transform translate-y-16 opacity-0 pointer-events-none">
+            <div class="flex items-center gap-3">
+              <div class="h-8 w-8 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center font-bold text-xs" id="hudIcon">NODE</div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-2" id="hudTitle">Pond A-2 (East Bund)</div>
+                <div class="text-[11px] text-slate-300" id="hudMetrics">DO: 3.6 mg/L &bull; 36 Count &bull; Biomass: 6,200 kg</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-bold" id="hudStatus">STATUS: ACTIVE</span>
+              <button onclick="hideNodeHud()" class="text-slate-400 hover:text-white text-xs px-2 py-1">&times;</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tracing Topology Footer Info -->
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-400 font-mono">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Sensor Sampling Rate: 1.0 Hz (Every 1s)
+          </span>
+          <span>Gateway Radio Latency: 12.4 ms &bull; Encrypted AES-GCM</span>
+        </div>
+
+      </div>
+
+      <!-- SOC INCIDENT & PACKET CONSOLE (4 COLS - THREATRIX TERMINAL) -->
+      <div class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col justify-between">
+        
+        <div>
+          <!-- Terminal Header -->
+          <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+              <h3 class="font-mono text-xs font-bold text-white uppercase tracking-wider">Live Packet &amp; Threat Terminal</h3>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-cyan-400 border border-slate-800 font-bold">STREAMING</span>
+          </div>
+
+          <!-- Terminal Stream Window -->
+          <div id="socConsoleStream" class="h-[430px] overflow-y-auto font-mono text-[11px] space-y-2 p-3 rounded-xl bg-slate-950 border border-slate-800/80 soc-terminal-scroll">
+            
+            <div class="p-2 rounded bg-rose-950/40 border border-rose-800/50 text-rose-300">
+              <div class="flex justify-between text-[10px] text-rose-400 font-bold mb-0.5">
+                <span>[18:04:12] THREAT_ANOMALY</span>
+                <span>CRITICAL</span>
+              </div>
+              <p>Pond A-2: Dissolved Oxygen dipped to 3.6 mg/L. Vector: Algae Respiration crash.</p>
+            </div>
+
+            <div class="p-2 rounded bg-cyan-950/30 border border-cyan-800/40 text-cyan-300">
+              <div class="flex justify-between text-[10px] text-cyan-400 font-bold mb-0.5">
+                <span>[18:04:10] AUTOPILOT_MITIGATION</span>
+                <span>INTERLOCK</span>
+              </div>
+              <p>Paddlewheel Bank #2 relay closed. Load +4.0 kW. Aerator spin active.</p>
+            </div>
+
+            <div class="p-2 rounded bg-slate-900/80 border border-slate-800 text-slate-300">
+              <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-0.5">
+                <span>[18:04:08] TELEMETRY_PING</span>
+                <span>POND-01</span>
+              </div>
+              <p>Optical Probe: DO 6.42 mg/L | Temp 28.4°C | pH 7.85 | RSSI -68 dBm.</p>
+            </div>
+
+            <div class="p-2 rounded bg-slate-900/80 border border-slate-800 text-slate-300">
+              <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-0.5">
+                <span>[18:04:05] HYDRAULIC_VECTOR</span>
+                <span>CANAL-01</span>
+              </div>
+              <p>Intake Sluice throughput: 180 L/s | Canal elevation: 1.25m normal.</p>
+            </div>
+
+            <div class="p-2 rounded bg-slate-900/80 border border-slate-800 text-slate-300">
+              <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-0.5">
+                <span>[18:04:02] GRID_POWER_TRACE</span>
+                <span>SUBSTATION</span>
+              </div>
+              <p>Total Feeder Load: 58.2 kW / 75 kVA | PF 0.91 | Frequency 50.02 Hz.</p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Terminal Actions -->
+        <div class="pt-3 border-t border-slate-800 mt-3 flex items-center justify-between">
+          <button onclick="clearConsole()" class="text-xs text-slate-400 hover:text-white transition">Clear Stream</button>
+          <span class="text-[11px] text-cyan-400 font-mono font-semibold">Auto-Tuning Active</span>
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ================= SECTION 2: POND DIGITAL TWIN CARDS (DESKTOP / MOBILE CONTAINER) ================= -->
+  <main id="appContainer" class="max-w-7xl mx-auto px-4 lg:px-8 py-6 transition-all duration-300 hidden">
+
+    <!-- Top Sub-Nav Filters & Night Safety Alert -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      
+      <!-- Filter Tabs -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        <button onclick="filterPonds('all')" class="pond-tab active px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white border border-slate-700 shadow-sm transition">
+          All Ponds (8)
+        </button>
+        <button onclick="filterPonds('critical')" class="pond-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800 transition flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span> Critical Attention (1)
+        </button>
+        <button onclick="filterPonds('harvest')" class="pond-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800 transition flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Harvest Ready (2)
+        </button>
+        <button onclick="filterPonds('nursery')" class="pond-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800 transition flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Nursery / PL (2)
+        </button>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="flex items-center gap-2">
+        <button onclick="toggleAllAerators()" id="btnGlobalAeration" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/80 flex items-center gap-1.5 transition">
+          <svg class="w-3.5 h-3.5 animate-paddle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <span>Run All Aerators (Night Mode)</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Night Alert Notification Banner (Dynamic) -->
+    <div id="nightAlertBanner" class="mb-6 p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-slate-900 border border-amber-600/40 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0 text-amber-400">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+            Night Watch Active &bull; Critical Oxygen Window (11:00 PM – 6:00 AM)
+          </div>
+          <p class="text-[12px] text-slate-300">Pond A-2 DO is dipping below 4.0 mg/L. Aerator Auto-Interlock scheduled 2 additional paddlewheels.</p>
+        </div>
+      </div>
+      <button onclick="resolveNightBanner()" class="text-xs font-semibold text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition">
+        Dismiss
+      </button>
+    </div>
+
+    <!-- ================= POND TWIN CARDS GRID ================= -->
+    <div id="pondGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      
+      <!-- CARD 1: POND A1 (OPTIMAL GROWOUT) -->
+      <div class="pond-card bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-5 shadow-xl transition-all duration-200 group relative flex flex-col justify-between" data-category="optimal">
+        <div>
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>
+                <h3 class="font-bold text-white text-base group-hover:text-cyan-400 transition">Pond A-1 (North Canal)</h3>
+              </div>
+              <span class="text-[11px] text-slate-400 font-mono font-medium">Unit: POND-01 &bull; 0.85 Hectares</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+              OPTIMAL
+            </span>
+          </div>
+
+          <!-- Vannamei Biological Badge Strip -->
+          <div class="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-center mb-4">
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">DOC</div>
+              <div class="text-xs font-bold text-white">D-68</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">Count</div>
+              <div class="text-xs font-bold text-cyan-400">46 / kg</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">ABW</div>
+              <div class="text-xs font-bold text-white">21.8g</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">Biomass</div>
+              <div class="text-xs font-bold text-white">4,850 kg</div>
+            </div>
+          </div>
+
+          <!-- Circular DO Telemetry Gauge & Hero Metric -->
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-br from-slate-950 to-slate-900 border border-slate-800/90 mb-4">
+            <div>
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Dissolved Oxygen</div>
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-3xl font-extrabold text-white tracking-tight">6.4</span>
+                <span class="text-xs font-semibold text-slate-400">mg/L</span>
+              </div>
+              <div class="text-[11px] font-semibold text-emerald-400 mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                Optimal Feeding Range
+              </div>
+            </div>
+
+            <!-- SVG Ring Meter -->
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <svg class="w-16 h-16 -rotate-90 transform" viewBox="0 0 36 36">
+                <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="text-emerald-400 transition-all duration-500" stroke-dasharray="82, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <span class="absolute text-[11px] font-bold text-emerald-300">82%</span>
+            </div>
+          </div>
+
+          <!-- Water Chemistry Quad-Grid -->
+          <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Water Temp</span>
+              <span class="font-bold text-white">28.4 °C</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">pH Level</span>
+              <span class="font-bold text-white">7.85 pH</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Salinity</span>
+              <span class="font-bold text-white">14.2 ppt</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Pond Depth</span>
+              <span class="font-bold text-white">1.25 m</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 animate-paddle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              </div>
+              <span class="text-xs font-semibold text-slate-300">4 / 4 Aerators Active</span>
+            </div>
+            <span class="text-[11px] font-mono font-bold text-cyan-400">8.0 kW</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="openDetailDrawer('Pond A-1')" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+              <span>Inspect Pond Twin</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: POND A2 (WARNING / OXYGEN DIP) -->
+      <div class="pond-card bg-slate-900/90 border border-amber-500/40 rounded-2xl p-5 shadow-xl transition-all duration-200 group relative flex flex-col justify-between" data-category="critical">
+        <div>
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+                <h3 class="font-bold text-white text-base group-hover:text-amber-400 transition">Pond A-2 (East Bund)</h3>
+              </div>
+              <span class="text-[11px] text-slate-400 font-mono font-medium">Unit: POND-02 &bull; 0.90 Hectares</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase bg-amber-950/80 text-amber-400 border border-amber-800/60">
+              LOW OXYGEN
+            </span>
+          </div>
+
+          <div class="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-center mb-4">
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">DOC</div>
+              <div class="text-xs font-bold text-white">D-84</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">Count</div>
+              <div class="text-xs font-bold text-amber-400">36 / kg</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">ABW</div>
+              <div class="text-xs font-bold text-white">27.5g</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">Biomass</div>
+              <div class="text-xs font-bold text-white">6,200 kg</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-br from-amber-950/30 to-slate-950 border border-amber-900/50 mb-4">
+            <div>
+              <div class="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-0.5">Dissolved Oxygen</div>
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-3xl font-extrabold text-amber-400 tracking-tight">3.6</span>
+                <span class="text-xs font-semibold text-slate-400">mg/L</span>
+              </div>
+              <div class="text-[11px] font-semibold text-amber-400 mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                Warning: Auto-Interlock Active
+              </div>
+            </div>
+
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <svg class="w-16 h-16 -rotate-90 transform" viewBox="0 0 36 36">
+                <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="text-amber-400 transition-all duration-500" stroke-dasharray="45, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <span class="absolute text-[11px] font-bold text-amber-400">45%</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Water Temp</span>
+              <span class="font-bold text-white">29.1 °C</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">pH Level</span>
+              <span class="font-bold text-white">8.12 pH</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Salinity</span>
+              <span class="font-bold text-white">15.0 ppt</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Pond Depth</span>
+              <span class="font-bold text-amber-300">1.18 m</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between p-2 rounded-xl bg-amber-950/30 border border-amber-900/60 mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 animate-paddle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              </div>
+              <span class="text-xs font-semibold text-amber-200">Boost Aerators: 4 / 4 ON</span>
+            </div>
+            <span class="text-[11px] font-mono font-bold text-amber-300">8.0 kW</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="openDetailDrawer('Pond A-2')" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-amber-500/20">
+              <span>Inspect Oxygen Alert</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: POND B1 (HARVEST READY) -->
+      <div class="pond-card bg-slate-900/90 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-5 shadow-xl transition-all duration-200 group relative flex flex-col justify-between" data-category="harvest">
+        <div>
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>
+                <h3 class="font-bold text-white text-base group-hover:text-emerald-400 transition">Pond B-1 (Jumbo Batch)</h3>
+              </div>
+              <span class="text-[11px] text-slate-400 font-mono font-medium">Unit: POND-03 &bull; 1.05 Hectares</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 flex items-center gap-1">
+              ₹ HARVEST READY
+            </span>
+          </div>
+
+          <div class="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-center mb-4">
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">DOC</div>
+              <div class="text-xs font-bold text-white">D-96</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">Count</div>
+              <div class="text-xs font-bold text-emerald-400">30 / kg</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">ABW</div>
+              <div class="text-xs font-bold text-white">33.5g</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">Biomass</div>
+              <div class="text-xs font-bold text-white">7,800 kg</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-br from-slate-950 to-slate-900 border border-slate-800/90 mb-4">
+            <div>
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Dissolved Oxygen</div>
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-3xl font-extrabold text-white tracking-tight">5.8</span>
+                <span class="text-xs font-semibold text-slate-400">mg/L</span>
+              </div>
+              <div class="text-[11px] font-semibold text-emerald-400 mt-1 flex items-center gap-1">
+                Est. Net Value: ₹ 33.5 Lakhs
+              </div>
+            </div>
+
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <svg class="w-16 h-16 -rotate-90 transform" viewBox="0 0 36 36">
+                <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="text-emerald-400 transition-all duration-500" stroke-dasharray="72, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <span class="absolute text-[11px] font-bold text-emerald-300">72%</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Water Temp</span>
+              <span class="font-bold text-white">27.9 °C</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">pH Level</span>
+              <span class="font-bold text-white">7.70 pH</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Salinity</span>
+              <span class="font-bold text-white">16.5 ppt</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Pond Depth</span>
+              <span class="font-bold text-white">1.32 m</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 animate-paddle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              </div>
+              <span class="text-xs font-semibold text-slate-300">4 / 4 Aerators Active</span>
+            </div>
+            <span class="text-[11px] font-mono font-bold text-cyan-400">8.0 kW</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="openDetailDrawer('Pond B-1')" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+              <span>Inspect Harvest Plan</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: POND B2 (NURSERY) -->
+      <div class="pond-card bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-5 shadow-xl transition-all duration-200 group relative flex flex-col justify-between" data-category="nursery">
+        <div>
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50"></span>
+                <h3 class="font-bold text-white text-base group-hover:text-cyan-400 transition">Pond B-2 (Nursery Hub)</h3>
+              </div>
+              <span class="text-[11px] text-slate-400 font-mono font-medium">Unit: POND-04 &bull; 0.40 Hectares</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
+              NURSERY
+            </span>
+          </div>
+
+          <div class="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-center mb-4">
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">DOC</div>
+              <div class="text-xs font-bold text-white">D-14</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">Count</div>
+              <div class="text-xs font-bold text-cyan-400">PL-12</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">ABW</div>
+              <div class="text-xs font-bold text-white">0.85g</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400">Biomass</div>
+              <div class="text-xs font-bold text-white">425 kg</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-br from-slate-950 to-slate-900 border border-slate-800/90 mb-4">
+            <div>
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Dissolved Oxygen</div>
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-3xl font-extrabold text-white tracking-tight">7.2</span>
+                <span class="text-xs font-semibold text-slate-400">mg/L</span>
+              </div>
+              <div class="text-[11px] font-semibold text-cyan-400 mt-1 flex items-center gap-1">
+                Aero-Tube Pure Nano Bubbles
+              </div>
+            </div>
+
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <svg class="w-16 h-16 -rotate-90 transform" viewBox="0 0 36 36">
+                <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="text-cyan-400 transition-all duration-500" stroke-dasharray="90, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <span class="absolute text-[11px] font-bold text-cyan-300">90%</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Water Temp</span>
+              <span class="font-bold text-white">28.0 °C</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">pH Level</span>
+              <span class="font-bold text-white">8.05 pH</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Salinity</span>
+              <span class="font-bold text-white">18.0 ppt</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+              <span class="text-slate-400">Pond Depth</span>
+              <span class="font-bold text-white">0.95 m</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 animate-paddle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              </div>
+              <span class="text-xs font-semibold text-slate-300">Roots Blower Active</span>
+            </div>
+            <span class="text-[11px] font-mono font-bold text-cyan-400">5.5 kW</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="openDetailDrawer('Pond B-2')" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+              <span>Inspect Nursery Feed</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= SLIDE-OVER DETAIL INSPECTION DRAWER ================= -->
+  <div id="detailDrawer" class="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-slate-950 border-l border-slate-800 shadow-2xl p-6 overflow-y-auto transform translate-x-full transition-transform duration-300">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+      <div>
+        <h2 id="drawerPondTitle" class="text-lg font-bold text-white">Pond A-1 Deep Telemetry</h2>
+        <p class="text-xs text-slate-400">Digital Twin &bull; Live Bio-Kinetics</p>
+      </div>
+      <button onclick="closeDetailDrawer()" class="h-8 w-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- 24-Hour Dissolved Oxygen Curve -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-slate-300 uppercase">24-Hour DO Dissolution Trend</span>
+        <span class="text-[11px] text-emerald-400 font-semibold">Safe Threshold &gt; 5.0</span>
+      </div>
+      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+        <svg class="w-full h-32" viewBox="0 0 300 100" fill="none">
+          <line x1="0" y1="50" x2="300" y2="50" stroke="#ef4444" stroke-dasharray="3 3" stroke-width="1"/>
+          <text x="5" y="45" fill="#ef4444" font-size="8" font-family="monospace">Critical 3.0 mg/L</text>
+          
+          <path d="M 0,30 Q 50,20 100,25 T 200,65 T 260,35 T 300,30" stroke="#06b6d4" stroke-width="3" fill="none"/>
+          <path d="M 0,30 Q 50,20 100,25 T 200,65 T 260,35 T 300,30 L 300,100 L 0,100 Z" fill="url(#cyanGrad)" opacity="0.15"/>
+          <defs>
+            <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#06b6d4"/>
+              <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <circle cx="200" cy="65" r="4" fill="#f59e0b"/>
+          <text x="180" y="80" fill="#f59e0b" font-size="8" font-family="monospace">3:30 AM (Low)</text>
+        </svg>
+        <div class="flex justify-between text-[10px] text-slate-400 mt-2 font-mono">
+          <span>12:00 PM</span>
+          <span>6:00 PM</span>
+          <span>12:00 AM</span>
+          <span>6:00 AM</span>
+          <span>Now</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feeding Check-Tray Intelligence -->
+    <div class="mb-6">
+      <h3 class="text-xs font-bold text-slate-300 uppercase mb-2">Check-Tray Status (చెక్ ట్రే పరిశీలన)</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-[11px] text-slate-400">Meal 2 (11:00 AM)</div>
+          <div class="text-sm font-bold text-emerald-400 mt-0.5">100% Cleaned (నిండుగా తిన్నాయి)</div>
+          <p class="text-[10px] text-slate-400 mt-1">Gut fullness 95%. Healthy feed consumption rate.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-[11px] text-slate-400">Meal 3 (3:30 PM)</div>
+          <div class="text-sm font-bold text-cyan-400 mt-0.5">Dispensed (65 kg)</div>
+          <p class="text-[10px] text-slate-400 mt-1">Auto-feeder timer running. Next check in 45m.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motor & Hardware Manual Interlock Controls -->
+    <div class="mb-6">
+      <h3 class="text-xs font-bold text-slate-300 uppercase mb-2">Actuator Interlocks (మోటార్ల నియంత్రణ)</h3>
+      <div class="space-y-2">
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-semibold text-white">Paddlewheel Bank A (2 x 2HP)</div>
+            <div class="text-[10px] text-slate-400">Feeder canal boundary &bull; Run time: 6.4h</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+          </label>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-semibold text-white">Paddlewheel Bank B (2 x 2HP)</div>
+            <div class="text-[10px] text-slate-400">Center vortex zone &bull; Run time: 6.4h</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Close Button -->
+    <button onclick="closeDetailDrawer()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-xs text-white transition">
+      Close Inspection
+    </button>
+  </div>
+
+  <!-- ================= SIMULATOR CONTROL MODAL ================= -->
+  <div id="simDrawer" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-base text-white flex items-center gap-2">
+          <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Interactive Scenario Simulator
+        </h3>
+        <button onclick="toggleSimDrawer()" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-5">Click any live test scenario to see how this UI dynamically adapts, shifts colors, and alerts the operator.</p>
+
+      <div class="space-y-3 mb-6">
+        <button onclick="injectThreatTrace()" class="w-full text-left p-3 rounded-xl bg-rose-950/30 hover:bg-rose-950/50 border border-rose-800/40 text-xs transition">
+          <div class="font-bold text-rose-300">1. Simulate 3:00 AM Oxygen Crash (DO &lt; 2.8 mg/L)</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Turns Pond A-1 red, sounds safety warning, switches all aerators ON.</div>
+        </button>
+
+        <button onclick="mitigateAllThreats()" class="w-full text-left p-3 rounded-xl bg-emerald-950/30 hover:bg-emerald-950/50 border border-emerald-800/40 text-xs transition">
+          <div class="font-bold text-emerald-300">2. Restore Optimal Day Conditions (DO 6.5 mg/L)</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Restores green status, idle excess daylight aerators to save diesel/power.</div>
+        </button>
+
+        <button onclick="simulatePowerTrip()" class="w-full text-left p-3 rounded-xl bg-amber-950/30 hover:bg-amber-950/50 border border-amber-800/40 text-xs transition">
+          <div class="font-bold text-amber-300">3. Grid Transformer Breaker Trip (DG Auto-Start)</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Demonstrates secondary power failover alerts and motor staggering.</div>
+        </button>
+      </div>
+
+      <button onclick="toggleSimDrawer()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white transition">
+        Done
+      </button>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    let streamInterval = null;
+
+    function setViewMode(mode) {
+      const containerPonds = document.getElementById('appContainer');
+      const sectionTracing = document.getElementById('sectionSocTracing');
+      const btnDesk = document.getElementById('btnDesktopView');
+      const btnMob = document.getElementById('btnMobileView');
+      const btnTrace = document.getElementById('btnTracingView');
+
+      // Reset button styles
+      [btnDesk, btnMob, btnTrace].forEach(b => {
+        b.classList.remove('bg-cyan-500', 'text-slate-950', 'font-bold');
+        b.classList.add('text-slate-400');
+      });
+
+      if (mode === 'tracing') {
+        sectionTracing.classList.remove('hidden');
+        containerPonds.classList.add('hidden');
+        btnTrace.classList.add('bg-cyan-500', 'text-slate-950', 'font-bold');
+        btnTrace.classList.remove('text-slate-400');
+      } else if (mode === 'mobile') {
+        sectionTracing.classList.add('hidden');
+        containerPonds.classList.remove('hidden');
+        containerPonds.classList.remove('max-w-7xl');
+        containerPonds.classList.add('max-w-sm', 'border', 'border-slate-800', 'rounded-3xl', 'shadow-2xl', 'p-4', 'my-4', 'bg-slate-950');
+        btnMob.classList.add('bg-cyan-500', 'text-slate-950', 'font-bold');
+        btnMob.classList.remove('text-slate-400');
+      } else { // desktop
+        sectionTracing.classList.add('hidden');
+        containerPonds.classList.remove('hidden');
+        containerPonds.classList.add('max-w-7xl');
+        containerPonds.classList.remove('max-w-sm', 'border', 'border-slate-800', 'rounded-3xl', 'shadow-2xl', 'p-4', 'my-4', 'bg-slate-950');
+        btnDesk.classList.add('bg-cyan-500', 'text-slate-950', 'font-bold');
+        btnDesk.classList.remove('text-slate-400');
+      }
+    }
+
+    function showNodeHud(title, metrics, subtext, status) {
+      const hud = document.getElementById('nodeHudOverlay');
+      document.getElementById('hudTitle').textContent = title;
+      document.getElementById('hudMetrics').textContent = `${metrics} • ${subtext}`;
+      document.getElementById('hudStatus').textContent = status;
+      hud.classList.remove('translate-y-16', 'opacity-0', 'pointer-events-none');
+    }
+
+    function hideNodeHud() {
+      const hud = document.getElementById('nodeHudOverlay');
+      hud.classList.add('translate-y-16', 'opacity-0', 'pointer-events-none');
+    }
+
+    function filterPonds(cat) {
+      document.querySelectorAll('.pond-tab').forEach(b => {
+        b.classList.remove('bg-slate-800', 'text-white');
+        b.classList.add('bg-slate-900/60', 'text-slate-400');
+      });
+      event.currentTarget.classList.add('bg-slate-800', 'text-white');
+      event.currentTarget.classList.remove('bg-slate-900/60', 'text-slate-400');
+
+      document.querySelectorAll('.pond-card').forEach(card => {
+        if (cat === 'all' || card.getAttribute('data-category') === cat) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function openDetailDrawer(title) {
+      document.getElementById('drawerPondTitle').textContent = `${title} Deep Telemetry`;
+      document.getElementById('detailDrawer').classList.remove('translate-x-full');
+    }
+
+    function closeDetailDrawer() {
+      document.getElementById('detailDrawer').classList.add('translate-x-full');
+    }
+
+    function toggleSimDrawer() {
+      document.getElementById('simDrawer').classList.toggle('hidden');
+    }
+
+    function resolveNightBanner() {
+      document.getElementById('nightAlertBanner').style.display = 'none';
+    }
+
+    function toggleAllAerators() {
+      const btn = document.getElementById('btnGlobalAeration');
+      btn.innerHTML = `
+        <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>All 24 Paddlewheels Energized (58 kW)</span>
+      `;
+      btn.classList.remove('bg-cyan-950/80', 'text-cyan-300');
+      btn.classList.add('bg-emerald-950/80', 'text-emerald-300', 'border-emerald-800');
+    }
+
+    function injectThreatTrace() {
+      toggleSimDrawer();
+      const threatPath = document.getElementById('pathThreatA2');
+      if (threatPath) {
+        threatPath.setAttribute('stroke', '#ef4444');
+        threatPath.setAttribute('stroke-width', '5');
+      }
+      appendSocLog('🚨 CRITICAL_THREAT', 'Pond A-1 Optical DO Sensor detected sudden drop: 2.38 mg/L! High algal crash vector.', 'rose');
+      appendSocLog('⚡ INTERLOCK_ACTIVATED', 'Substation Feeder Line-A boosted to 12.0 kW. 4 Paddlewheels energized.', 'cyan');
+    }
+
+    function mitigateAllThreats() {
+      toggleSimDrawer();
+      const threatPath = document.getElementById('pathThreatA2');
+      if (threatPath) {
+        threatPath.setAttribute('stroke', '#10b981');
+        threatPath.setAttribute('stroke-width', '2.5');
+      }
+      appendSocLog('🛡️ THREAT_RESOLVED', 'All pond dissolved oxygen levels restored above 5.8 mg/L. Autopilot nominal.', 'emerald');
+    }
+
+    function simulatePowerTrip() {
+      toggleSimDrawer();
+      appendSocLog('⚡ POWER_FAILOVER', 'Main 100 kVA Transformer breaker tripped. 125 kVA Diesel Generator ATS engaged (0.4s).', 'amber');
+    }
+
+    function appendSocLog(type, message, color) {
+      const stream = document.getElementById('socConsoleStream');
+      const timeStr = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      
+      let colorClass = 'bg-slate-900/80 border-slate-800 text-slate-300';
+      let titleClass = 'text-slate-400';
+      if (color === 'rose') {
+        colorClass = 'bg-rose-950/40 border-rose-800/50 text-rose-300';
+        titleClass = 'text-rose-400';
+      } else if (color === 'emerald') {
+        colorClass = 'bg-emerald-950/40 border-emerald-800/50 text-emerald-300';
+        titleClass = 'text-emerald-400';
+      } else if (color === 'cyan') {
+        colorClass = 'bg-cyan-950/40 border-cyan-800/50 text-cyan-300';
+        titleClass = 'text-cyan-400';
+      } else if (color === 'amber') {
+        colorClass = 'bg-amber-950/40 border-amber-800/50 text-amber-300';
+        titleClass = 'text-amber-400';
+      }
+
+      div.className = `p-2 rounded border ${colorClass} transition-all duration-300`;
+      div.innerHTML = `
+        <div class="flex justify-between text-[10px] font-bold mb-0.5 ${titleClass}">
+          <span>[${timeStr}] ${type}</span>
+          <span>LIVE_TRACE</span>
+        </div>
+        <p>${message}</p>
+      `;
+      stream.prepend(div);
+    }
+
+    function clearConsole() {
+      document.getElementById('socConsoleStream').innerHTML = '';
+    }
+
+    // Auto-stream periodic realistic telemetry packets
+    function startAutoSocStream() {
+      const messages = [
+        { type: 'TELEMETRY_PING', msg: 'Pond A-1: Optical DO 6.38 mg/L | Temp 28.5°C | Latency 11ms.', color: 'emerald' },
+        { type: 'POWER_VECTOR', msg: 'Transformer Bus Line-2: Current 14.1A | Voltage 415.8V | Power Factor 0.89.', color: 'cyan' },
+        { type: 'WATER_FLOW', msg: 'Canal Lift Sluice: Discharge 210 L/s | Silt index < 12 NTU.', color: 'emerald' },
+        { type: 'MESH_HEARTBEAT', msg: 'LoRaWAN Edge Hub: 8 Nodes connected | Packet loss 0.00% | RSSI -64 dBm.', color: 'cyan' },
+        { type: 'CHECK_TRAY_LOG', msg: 'Pond B-1: Auto-feeder tray inspection complete. 98% feed cleared.', color: 'emerald' }
+      ];
+
+      setInterval(() => {
+        const rand = messages[Math.floor(Math.random() * messages.length)];
+        appendSocLog(rand.type, rand.msg, rand.color);
+      }, 3500);
+    }
+
+    // Start streaming on load
+    startAutoSocStream();
+  </script>
+</body>
+</html>

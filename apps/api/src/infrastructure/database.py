@@ -76,6 +76,8 @@ def _ensure_table_columns(eng) -> None:
                 existing_feed_cols = {row[1] for row in res_feed}
                 feed_cols_to_add = [
                     ("batch_id", "VARCHAR(64)"),
+                    ("product_id", "VARCHAR(64)"),
+                    ("plan_id", "VARCHAR(64)"),
                     ("feeding_event_count", "INTEGER DEFAULT 1"),
                     ("created_at", "TIMESTAMP"),
                     ("updated_at", "TIMESTAMP"),
@@ -186,6 +188,250 @@ def _ensure_table_columns(eng) -> None:
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_aerator_runtime_pond ON aerator_runtime_logs(pond_id, start_time)"))
     except Exception:
         pass
+
+    # 7. Ensure feed inventory tables exist
+    try:
+        with eng.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS feed_products (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    product_id VARCHAR(64) NOT NULL UNIQUE,
+                    farm_id VARCHAR(64) NOT NULL,
+                    product_name VARCHAR(128) NOT NULL,
+                    brand VARCHAR(128),
+                    feed_type VARCHAR(64),
+                    pellet_size VARCHAR(64),
+                    unit_of_measure VARCHAR(32) NOT NULL DEFAULT 'kg',
+                    reorder_threshold_kg FLOAT NOT NULL DEFAULT 100.0,
+                    is_active BOOLEAN NOT NULL DEFAULT 1,
+                    notes TEXT,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_feed_products_farm ON feed_products(farm_id)"))
+
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS feed_inventory_transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    transaction_id VARCHAR(64) NOT NULL UNIQUE,
+                    farm_id VARCHAR(64) NOT NULL,
+                    product_id VARCHAR(64) NOT NULL,
+                    transaction_type VARCHAR(32) NOT NULL,
+                    quantity_kg FLOAT NOT NULL,
+                    unit_of_measure VARCHAR(32) NOT NULL DEFAULT 'kg',
+                    unit_price FLOAT,
+                    total_cost FLOAT,
+                    supplier VARCHAR(128),
+                    invoice_number VARCHAR(64),
+                    feeding_log_id INTEGER,
+                    pond_id VARCHAR(64),
+                    batch_id VARCHAR(64),
+                    reason TEXT,
+                    notes TEXT,
+                    idempotency_key VARCHAR(128) UNIQUE,
+                    recorded_by VARCHAR(64) NOT NULL,
+                    timestamp TIMESTAMP,
+                    created_at TIMESTAMP
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_feed_tx_farm_product ON feed_inventory_transactions(farm_id, product_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_feed_tx_feeding_log ON feed_inventory_transactions(feeding_log_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_feed_tx_idempotency ON feed_inventory_transactions(idempotency_key)"))
+    except Exception:
+        pass
+
+    # 8. Ensure feed_plans table exists
+    try:
+        with eng.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS feed_plans (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    plan_id VARCHAR(64) NOT NULL UNIQUE,
+                    farm_id VARCHAR(64) NOT NULL,
+                    pond_id VARCHAR(64) NOT NULL,
+                    batch_id VARCHAR(64) NOT NULL,
+                    plan_date TIMESTAMP NOT NULL,
+                    product_id VARCHAR(64),
+                    feed_type VARCHAR(128) NOT NULL DEFAULT 'Grower Pellet 38%',
+                    planned_daily_kg FLOAT NOT NULL,
+                    feeding_sessions_count INTEGER NOT NULL DEFAULT 4,
+                    session_times_json TEXT,
+                    planned_kg_per_session FLOAT NOT NULL,
+                    status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
+                    recommendation_basis VARCHAR(64) NOT NULL DEFAULT 'MANUAL',
+                    ration_inputs_json TEXT,
+                    notes TEXT,
+                    created_by VARCHAR(64) NOT NULL,
+                    approved_by VARCHAR(64),
+                    approved_at TIMESTAMP,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_feed_plans_farm_date ON feed_plans(farm_id, plan_date)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_feed_plans_pond_date ON feed_plans(pond_id, plan_date)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_feed_plans_batch ON feed_plans(batch_id)"))
+    except Exception:
+        pass
+
+    # 9. Ensure harvest_records table exists
+    try:
+        with eng.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS harvest_records (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    harvest_id VARCHAR(64) NOT NULL UNIQUE,
+                    farm_id VARCHAR(64) NOT NULL,
+                    pond_id VARCHAR(64) NOT NULL,
+                    batch_id VARCHAR(64) NOT NULL,
+                    harvest_type VARCHAR(32) NOT NULL DEFAULT 'FINAL',
+                    harvest_date TIMESTAMP NOT NULL,
+                    harvested_weight_kg FLOAT NOT NULL,
+                    count_pieces INTEGER,
+                    count_per_kg FLOAT,
+                    avg_body_weight_g FLOAT,
+                    grade VARCHAR(64),
+                    selling_price_per_kg FLOAT,
+                    total_revenue FLOAT,
+                    documented_losses_kg FLOAT NOT NULL DEFAULT 0.0,
+                    buyer VARCHAR(128),
+                    notes TEXT,
+                    idempotency_key VARCHAR(128) UNIQUE,
+                    recorded_by VARCHAR(64) NOT NULL,
+                    created_at TIMESTAMP
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_harvest_records_farm_date ON harvest_records(farm_id, harvest_date)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_harvest_records_pond ON harvest_records(pond_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_harvest_records_batch ON harvest_records(batch_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_harvest_records_idempotency ON harvest_records(idempotency_key)"))
+    except Exception:
+        pass
+
+    # 10. Ensure farm_expenses table exists
+    try:
+        with eng.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS farm_expenses (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    expense_id VARCHAR(64) NOT NULL UNIQUE,
+                    farm_id VARCHAR(64) NOT NULL,
+                    pond_id VARCHAR(64),
+                    batch_id VARCHAR(64),
+                    category VARCHAR(64) NOT NULL,
+                    amount FLOAT NOT NULL,
+                    currency VARCHAR(16) NOT NULL DEFAULT 'USD',
+                    transaction_date TIMESTAMP NOT NULL,
+                    supplier VARCHAR(128),
+                    invoice_number VARCHAR(64),
+                    payment_method VARCHAR(64),
+                    idempotency_key VARCHAR(128) UNIQUE,
+                    status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+                    correction_type VARCHAR(32) NOT NULL DEFAULT 'ORIGINAL',
+                    corrected_expense_id VARCHAR(64),
+                    correction_reason TEXT,
+                    notes TEXT,
+                    recorded_by VARCHAR(64) NOT NULL,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_farm_expenses_farm_date ON farm_expenses(farm_id, transaction_date)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_farm_expenses_pond ON farm_expenses(pond_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_farm_expenses_batch ON farm_expenses(batch_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_farm_expenses_category ON farm_expenses(category)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_farm_expenses_idempotency ON farm_expenses(idempotency_key)"))
+    except Exception:
+        pass
+
+    # 11. Ensure farm_cash_transactions table exists
+    try:
+        with eng.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS farm_cash_transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    transaction_id VARCHAR(64) NOT NULL UNIQUE,
+                    farm_id VARCHAR(64) NOT NULL,
+                    entry_type VARCHAR(32) NOT NULL,
+                    category VARCHAR(64) NOT NULL,
+                    amount FLOAT NOT NULL,
+                    currency VARCHAR(16) NOT NULL DEFAULT 'USD',
+                    payment_date TIMESTAMP NOT NULL,
+                    payment_method VARCHAR(64) NOT NULL DEFAULT 'BANK_TRANSFER',
+                    reference_number VARCHAR(64),
+                    payer_payee VARCHAR(128),
+                    expense_id VARCHAR(64),
+                    harvest_id VARCHAR(64),
+                    batch_id VARCHAR(64),
+                    pond_id VARCHAR(64),
+                    idempotency_key VARCHAR(128) UNIQUE,
+                    status VARCHAR(32) NOT NULL DEFAULT 'COMPLETED',
+                    void_reason TEXT,
+                    notes TEXT,
+                    recorded_by VARCHAR(64) NOT NULL,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_cash_tx_farm_date ON farm_cash_transactions(farm_id, payment_date)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_cash_tx_entry_type ON farm_cash_transactions(entry_type)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_cash_tx_expense ON farm_cash_transactions(expense_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_cash_tx_harvest ON farm_cash_transactions(harvest_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_cash_tx_batch ON farm_cash_transactions(batch_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_cash_tx_idempotency ON farm_cash_transactions(idempotency_key)"))
+    except Exception:
+        pass
+
+    # 12. Ensure crop_cycle_budgets table exists
+    try:
+        with eng.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS crop_cycle_budgets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    budget_id VARCHAR(64) NOT NULL UNIQUE,
+                    farm_id VARCHAR(64) NOT NULL,
+                    batch_id VARCHAR(64),
+                    pond_id VARCHAR(64),
+                    cycle_label VARCHAR(64),
+                    category VARCHAR(64) NOT NULL,
+                    budgeted_amount FLOAT NOT NULL,
+                    currency VARCHAR(16) NOT NULL DEFAULT 'USD',
+                    notes TEXT,
+                    created_by VARCHAR(64) NOT NULL,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_budgets_farm ON crop_cycle_budgets(farm_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_budgets_batch ON crop_cycle_budgets(batch_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_budgets_category ON crop_cycle_budgets(category)"))
+    except Exception:
+        pass
+
+    # 13. Ensure cash_balance_snapshots table exists
+    try:
+        with eng.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS cash_balance_snapshots (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    snapshot_id VARCHAR(64) NOT NULL UNIQUE,
+                    farm_id VARCHAR(64) NOT NULL,
+                    balance_date TIMESTAMP NOT NULL,
+                    opening_balance FLOAT NOT NULL,
+                    closing_balance FLOAT,
+                    currency VARCHAR(16) NOT NULL DEFAULT 'USD',
+                    bank_account_name VARCHAR(128),
+                    verified_by VARCHAR(64) NOT NULL,
+                    notes TEXT,
+                    created_at TIMESTAMP
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_balance_snapshots_farm_date ON cash_balance_snapshots(farm_id, balance_date)"))
+    except Exception:
+        pass
+
+
 
 
 def init_db(target_engine=None) -> None:

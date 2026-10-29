@@ -191,6 +191,8 @@ class PondMonitoringService:
         batch_id: Optional[str] = None,
         feeding_event_count: int = 1,
         timestamp: Optional[datetime] = None,
+        product_id: Optional[str] = None,
+        plan_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Record manual feeding entry."""
         return self._records_repo.log_feeding(
@@ -205,6 +207,8 @@ class PondMonitoringService:
             batch_id=batch_id,
             feeding_event_count=feeding_event_count,
             timestamp=timestamp,
+            product_id=product_id,
+            plan_id=plan_id,
         )
 
     def update_stocking_batch(self, batch_data: Dict[str, Any]) -> Dict[str, Any]:

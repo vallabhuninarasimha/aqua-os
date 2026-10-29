@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "data_class": "SIMULATED_NOT_PHYSICAL",
+  "description": "Scenario catalogue for local Aqua OS software validation. These profiles drive the existing deterministic telemetry generator; they are not measurements from a real farm.",
+  "scenarios": [
+    {
+      "dataset_id": "baseline-stable",
+      "label": "Baseline stable pond",
+      "scenario_type": "NORMAL_DIURNAL",
+      "purpose": "Verify ordinary telemetry updates, charts, freshness badges, and no-false-alarm behavior.",
+      "recommended_duration_minutes": 10,
+      "expected_result": "New telemetry records remain marked simulated; dashboard shows source status clearly."
+    },
+    {
+      "dataset_id": "low-do-event",
+      "label": "Low dissolved oxygen event",
+      "scenario_type": "SUDDEN_HYPOXIA",
+      "purpose": "Exercise low-DO risk evaluation, action generation, operator decision approval, and post-decision telemetry review.",
+      "recommended_duration_minutes": 5,
+      "expected_result": "The advisory flow identifies the simulated risk; any actuator request is recorded as DRY_RUN only."
+    },
+    {
+      "dataset_id": "sensor-stale",
+      "label": "Stale sensor / communication loss",
+      "scenario_type": "STALE_READINGS",
+      "purpose": "Exercise stale/missing data handling and fail-safe UI behavior.",
+      "recommended_duration_minutes": 5,
+      "expected_result": "Stale telemetry is not treated as healthy; physical actuation remains disabled."
+    },
+    {
+      "dataset_id": "aerator-failure",
+      "label": "Aerator failure",
+      "scenario_type": "AERATOR_FAILURE",
+      "purpose": "Exercise equipment-fault advisories, decision-to-action linking, and command audit history.",
+      "recommended_duration_minutes": 5,
+      "expected_result": "Fault remains synthetic; no physical aerator state is changed."
+    },
+    {
+      "dataset_id": "probe-fouling",
+      "label": "Probe fouling / biased reading",
+      "scenario_type": "PROBE_FOULING",
+      "purpose": "Exercise suspect sensor data and uncertainty presentation.",
+      "recommended_duration_minutes": 5,
+      "expected_result": "Data quality concerns are surfaced; the agent does not infer a confirmed biological condition from suspect readings alone."
+    }
+  ],
+  "hardware_policy": {
+    "controller_mode": "SIMULATION_ONLY",
+    "physical_execution_enabled": false,
+    "required_before_physical_commissioning": [
+      "verified independent electrical interlocks",
+      "tested emergency stop circuit independent of software",
+      "manual local override",
+      "confirmed actuator feedback contact/sensor",
+      "motor/transformer assignment and load validation by qualified personnel",
+      "sensor calibration and farm-approved biological thresholds",
+      "commissioning sign-off and a rollback procedure"
+    ]
+  }
+}

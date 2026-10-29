@@ -57,7 +57,8 @@ def test_static_dashboard_html_served():
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
     assert "AQUA OS" in resp.text
-    assert "20-Pond Baseline Live Monitor" in resp.text
+    assert "Farm Operations Overview" in resp.text
+    assert "System readiness" in resp.text
 
 
 def test_simulator_status_and_step():

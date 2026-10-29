@@ -262,6 +262,57 @@ class AuditLogORM(Base):
     ip_address = Column(String(45), nullable=True)
 
 
+class AgentConversationORM(Base):
+    """Farm- and user-scoped conversation metadata for the operations agent."""
+
+    __tablename__ = "agent_conversations"
+
+    conversation_id = Column(String(36), primary_key=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    title = Column(String(160), nullable=False, default="Farm operations conversation")
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+
+
+class AgentConversationTurnORM(Base):
+    """Bounded conversation turn storage; evidence is summarized, not treated as truth memory."""
+
+    __tablename__ = "agent_conversation_turns"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    conversation_id = Column(String(36), nullable=False, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    role = Column(String(16), nullable=False)
+    content = Column(Text, nullable=False)
+    metadata_json = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+
+
+class AgentDecisionORM(Base):
+    """Farm- and user-scoped operator review record; never a hardware command."""
+
+    __tablename__ = "agent_decisions"
+
+    decision_id = Column(String(36), primary_key=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    created_by = Column(String(64), nullable=False, index=True)
+    updated_by = Column(String(64), nullable=False)
+    finding_id = Column(String(160), nullable=False, index=True)
+    title = Column(String(240), nullable=False)
+    pond_id = Column(String(64), nullable=True, index=True)
+    severity = Column(String(32), nullable=False, default="UNKNOWN")
+    status = Column(String(32), nullable=False, default="PENDING_REVIEW", index=True)
+    finding_snapshot_json = Column(Text, nullable=False)
+    operator_note = Column(Text, nullable=True)
+    outcome_note = Column(Text, nullable=True)
+    outcome_status = Column(String(32), nullable=True)
+    event_history_json = Column(Text, nullable=False, default="[]")
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+
 class SensorRegistryORM(Base):
     """Registered physical and simulated sensors per pond."""
 
@@ -449,6 +500,33 @@ class GrowthSamplingORM(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class HarvestRecordORM(Base):
+    """Pond harvest event record (partial or final harvest) with yield, grading, and revenue."""
+
+    __tablename__ = "harvest_records"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    harvest_id = Column(String(64), nullable=False, unique=True, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    pond_id = Column(String(64), nullable=False, index=True)
+    batch_id = Column(String(64), nullable=False, index=True)
+    harvest_type = Column(String(32), nullable=False, default="FINAL")  # PARTIAL or FINAL
+    harvest_date = Column(DateTime(timezone=True), nullable=False, index=True)
+    harvested_weight_kg = Column(Float, nullable=False)
+    count_pieces = Column(Integer, nullable=True)
+    count_per_kg = Column(Float, nullable=True)
+    avg_body_weight_g = Column(Float, nullable=True)
+    grade = Column(String(64), nullable=True)
+    selling_price_per_kg = Column(Float, nullable=True)
+    total_revenue = Column(Float, nullable=True)
+    documented_losses_kg = Column(Float, nullable=False, default=0.0)
+    buyer = Column(String(128), nullable=True)
+    notes = Column(Text, nullable=True)
+    idempotency_key = Column(String(128), nullable=True, unique=True, index=True)
+    recorded_by = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class FeedingLogORM(Base):
     """Manual feeding records, ration weights, and feeding tray consumption observations."""
 
@@ -458,6 +536,8 @@ class FeedingLogORM(Base):
     farm_id = Column(String(64), nullable=False, index=True)
     pond_id = Column(String(64), nullable=False, index=True)
     batch_id = Column(String(64), nullable=True, index=True)
+    product_id = Column(String(64), nullable=True, index=True)
+    plan_id = Column(String(64), nullable=True, index=True)
     timestamp = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -476,6 +556,93 @@ class FeedingLogORM(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+
+class FeedPlanORM(Base):
+    """Daily pond- and batch-specific feeding plan with planned ration, schedule, and execution status."""
+
+    __tablename__ = "feed_plans"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    plan_id = Column(String(64), nullable=False, unique=True, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    pond_id = Column(String(64), nullable=False, index=True)
+    batch_id = Column(String(64), nullable=False, index=True)
+    plan_date = Column(DateTime(timezone=True), nullable=False, index=True)
+    product_id = Column(String(64), nullable=True, index=True)
+    feed_type = Column(String(128), nullable=False, default="Grower Pellet 38%")
+    planned_daily_kg = Column(Float, nullable=False)
+    feeding_sessions_count = Column(Integer, nullable=False, default=4)
+    session_times_json = Column(Text, nullable=True)  # JSON list of slot labels / times e.g. ["06:00", "11:00", "16:00", "21:00"]
+    planned_kg_per_session = Column(Float, nullable=False)
+    status = Column(String(32), nullable=False, default="DRAFT")  # DRAFT, APPROVED, IN_PROGRESS, COMPLETED, CANCELLED
+    recommendation_basis = Column(String(64), nullable=False, default="MANUAL")  # ADVISORY, MANUAL, CUSTOM
+    ration_inputs_json = Column(Text, nullable=True)  # Snapshot of calculation provenance, body weight, biomass, table used
+    notes = Column(Text, nullable=True)
+    created_by = Column(String(64), nullable=False)
+    approved_by = Column(String(64), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class FeedProductORM(Base):
+    """Feed catalog product registered for a farm."""
+
+    __tablename__ = "feed_products"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    product_id = Column(String(64), nullable=False, unique=True, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    product_name = Column(String(128), nullable=False)
+    brand = Column(String(128), nullable=True)
+    feed_type = Column(String(64), nullable=True)
+    pellet_size = Column(String(64), nullable=True)
+    unit_of_measure = Column(String(32), nullable=False, default="kg")
+    reorder_threshold_kg = Column(Float, nullable=False, default=100.0)
+    is_active = Column(Boolean, nullable=False, default=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class FeedInventoryTransactionORM(Base):
+    """Immutable audit ledger for feed stock transactions (receipts, consumption, adjustments)."""
+
+    __tablename__ = "feed_inventory_transactions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    transaction_id = Column(String(64), nullable=False, unique=True, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    product_id = Column(String(64), nullable=False, index=True)
+    transaction_type = Column(String(32), nullable=False, index=True)  # RECEIPT, CONSUMPTION, ADJUSTMENT_DAMAGE, ADJUSTMENT_EXPIRED, ADJUSTMENT_CORRECTION, ADJUSTMENT_OTHER
+    quantity_kg = Column(Float, nullable=False)  # positive for receipt / positive correction; negative for consumption / damage
+    unit_of_measure = Column(String(32), nullable=False, default="kg")
+    unit_price = Column(Float, nullable=True)  # currency per kg if known
+    total_cost = Column(Float, nullable=True)  # currency total if known
+    supplier = Column(String(128), nullable=True)
+    invoice_number = Column(String(64), nullable=True)
+    feeding_log_id = Column(Integer, nullable=True, index=True)
+    pond_id = Column(String(64), nullable=True, index=True)
+    batch_id = Column(String(64), nullable=True, index=True)
+    reason = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    idempotency_key = Column(String(128), nullable=True, unique=True, index=True)
+    recorded_by = Column(String(64), nullable=False)
+    timestamp = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class MortalityRecordORM(Base):
@@ -612,4 +779,134 @@ class WaterExchangeLogORM(Base):
     notes = Column(Text, nullable=True)
 
 
+class FarmExpenseORM(Base):
+    """Immutable ledger of recorded operating and production expenses with pond/batch attribution."""
 
+    __tablename__ = "farm_expenses"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    expense_id = Column(String(64), nullable=False, unique=True, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    pond_id = Column(String(64), nullable=True, index=True)
+    batch_id = Column(String(64), nullable=True, index=True)
+    category = Column(String(64), nullable=False, index=True)  # SEED_PL, CHEMICAL_AND_TREATMENT, ELECTRICITY_ENERGY, LABOUR, MAINTENANCE_REPAIR, FEED, OTHER
+    amount = Column(Float, nullable=False)
+    currency = Column(String(16), nullable=False, default="USD")
+    transaction_date = Column(DateTime(timezone=True), nullable=False, index=True)
+    supplier = Column(String(128), nullable=True)
+    invoice_number = Column(String(64), nullable=True, index=True)
+    payment_method = Column(String(64), nullable=True)  # BANK_TRANSFER, CASH, CHEQUE, CREDIT
+    idempotency_key = Column(String(128), nullable=True, unique=True, index=True)
+    status = Column(String(32), nullable=False, default="ACTIVE")  # ACTIVE, CORRECTED, REVERSED
+    correction_type = Column(String(32), nullable=False, default="ORIGINAL")  # ORIGINAL, CORRECTION, REVERSAL
+    corrected_expense_id = Column(String(64), nullable=True, index=True)
+    correction_reason = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    recorded_by = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class FarmCashTransactionORM(Base):
+    """Actual cash ledger entries (inflow receipts and disbursement payments) linked to underlying transactions."""
+
+    __tablename__ = "farm_cash_transactions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    transaction_id = Column(String(64), nullable=False, unique=True, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    entry_type = Column(String(32), nullable=False, index=True)  # CASH_IN, CASH_OUT
+    category = Column(String(64), nullable=False, index=True)
+    amount = Column(Float, nullable=False)
+    currency = Column(String(16), nullable=False, default="USD")
+    payment_date = Column(DateTime(timezone=True), nullable=False, index=True)
+    payment_method = Column(String(64), nullable=False, default="BANK_TRANSFER")  # BANK_TRANSFER, CASH, CHEQUE, UPI_WIRE, MOBILE_MONEY
+    reference_number = Column(String(64), nullable=True, index=True)
+    payer_payee = Column(String(128), nullable=True)
+    # Traceability links to underlying commitments
+    expense_id = Column(String(64), nullable=True, index=True)  # Links to FarmExpenseORM when paying an expense
+    harvest_id = Column(String(64), nullable=True, index=True)  # Links to HarvestRecordORM when collecting revenue
+    batch_id = Column(String(64), nullable=True, index=True)
+    pond_id = Column(String(64), nullable=True, index=True)
+    idempotency_key = Column(String(128), nullable=True, unique=True, index=True)
+    status = Column(String(32), nullable=False, default="COMPLETED")  # COMPLETED, VOIDED
+    void_reason = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    recorded_by = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class CropCycleBudgetORM(Base):
+    """Target crop-cycle expenditure budgets by operational category and batch/pond."""
+
+    __tablename__ = "crop_cycle_budgets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    budget_id = Column(String(64), nullable=False, unique=True, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    batch_id = Column(String(64), nullable=True, index=True)
+    pond_id = Column(String(64), nullable=True, index=True)
+    cycle_label = Column(String(64), nullable=True)
+    category = Column(String(64), nullable=False, index=True)  # SEED_PL, FEED, CHEMICAL_AND_TREATMENT, ELECTRICITY_ENERGY, LABOUR, MAINTENANCE_REPAIR, OTHER, FARM_OVERHEAD
+    budgeted_amount = Column(Float, nullable=False)
+    currency = Column(String(16), nullable=False, default="USD")
+    notes = Column(Text, nullable=True)
+    created_by = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class CashBalanceSnapshotORM(Base):
+    """Documented bank and cash on hand opening/closing verification records."""
+
+    __tablename__ = "cash_balance_snapshots"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    snapshot_id = Column(String(64), nullable=False, unique=True, index=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    balance_date = Column(DateTime(timezone=True), nullable=False, index=True)
+    opening_balance = Column(Float, nullable=False)
+    closing_balance = Column(Float, nullable=True)
+    currency = Column(String(16), nullable=False, default="USD")
+    bank_account_name = Column(String(128), nullable=True)
+    verified_by = Column(String(64), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+
+
+
+
+
+class EdgeCommandORM(Base):
+    """Auditable edge command envelope. Commands are simulation-only until separately commissioned."""
+
+    __tablename__ = "edge_commands"
+
+    command_id = Column(String(36), primary_key=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    pond_id = Column(String(64), nullable=True, index=True)
+    decision_id = Column(String(36), nullable=True, index=True)
+    actuator_type = Column(String(32), nullable=False)
+    actuator_id = Column(String(64), nullable=False)
+    requested_state = Column(String(16), nullable=False)
+    mode = Column(String(16), nullable=False, default="DRY_RUN")
+    status = Column(String(32), nullable=False, default="QUEUED_SIMULATION", index=True)
+    payload_json = Column(Text, nullable=False, default="{}")
+    result_json = Column(Text, nullable=False, default="{}")
+    requested_by = Column(String(64), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)

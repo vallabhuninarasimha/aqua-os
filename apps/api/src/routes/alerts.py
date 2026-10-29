@@ -39,9 +39,21 @@ async def acknowledge_alert(
     user: UserIdentity = Depends(require_permission(Permission.ADVISORY_ACK)),
     session: Session = Depends(get_db_session),
 ) -> Dict[str, Any]:
-    """Acknowledge an active alert."""
+    """Acknowledge an active alert scoped to authorized farm."""
     repo = SQLAlertRepository(session)
-    result = repo.acknowledge(alert_id=alert_id, acknowledged_by=user.username)
+    # Check alert existence across database to verify farm ownership before mutation
+    unscoped_alert = repo.get_alert(alert_id)
+    if not unscoped_alert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Alert with ID '{alert_id}' not found.",
+        )
+    target_farm_id = unscoped_alert["farm_id"]
+    verify_farm_access(user, target_farm_id)
+
+    # Perform farm-scoped mutation
+    effective_farm_id = None if user.role.value == "system_admin" else user.farm_id
+    result = repo.acknowledge(alert_id=alert_id, acknowledged_by=user.username, farm_id=effective_farm_id)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -57,9 +69,19 @@ async def resolve_alert(
     user: UserIdentity = Depends(require_permission(Permission.ADVISORY_ACK)),
     session: Session = Depends(get_db_session),
 ) -> Dict[str, Any]:
-    """Resolve an active or acknowledged alert."""
+    """Resolve an active or acknowledged alert scoped to authorized farm."""
     repo = SQLAlertRepository(session)
-    result = repo.resolve(alert_id=alert_id, resolved_by=user.username)
+    unscoped_alert = repo.get_alert(alert_id)
+    if not unscoped_alert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Alert with ID '{alert_id}' not found.",
+        )
+    target_farm_id = unscoped_alert["farm_id"]
+    verify_farm_access(user, target_farm_id)
+
+    effective_farm_id = None if user.role.value == "system_admin" else user.farm_id
+    result = repo.resolve(alert_id=alert_id, resolved_by=user.username, farm_id=effective_farm_id)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

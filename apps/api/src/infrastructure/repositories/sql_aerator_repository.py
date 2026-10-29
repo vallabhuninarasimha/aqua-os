@@ -28,13 +28,11 @@ class SQLAeratorRepository:
         )
         return self._to_domain(orm) if orm else None
 
-    def list_by_pond(self, pond_id: str) -> List[AeratorStatus]:
-        orms = (
-            self._session.query(AeratorUnitORM)
-            .filter(AeratorUnitORM.pond_id == pond_id)
-            .order_by(AeratorUnitORM.aerator_id)
-            .all()
-        )
+    def list_by_pond(self, pond_id: str, farm_id: Optional[str] = None) -> List[AeratorStatus]:
+        query = self._session.query(AeratorUnitORM).filter(AeratorUnitORM.pond_id == pond_id)
+        if farm_id:
+            query = query.filter(AeratorUnitORM.farm_id == farm_id)
+        orms = query.order_by(AeratorUnitORM.aerator_id).all()
         return [self._to_domain(o) for o in orms]
 
     def list_by_transformer(self, transformer_id: str) -> List[AeratorStatus]:

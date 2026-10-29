@@ -89,6 +89,15 @@ class SQLHealthRepository:
         self._session.commit()
         return self._mortality_to_dict(orm)
 
+    def get_mortality(self, mortality_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve mortality record by ID without farm filtering for tenant verification."""
+        rec = (
+            self._session.query(MortalityRecordORM)
+            .filter(MortalityRecordORM.mortality_id == mortality_id)
+            .first()
+        )
+        return self._mortality_to_dict(rec) if rec else None
+
     def list_mortalities(
         self,
         farm_id: str,

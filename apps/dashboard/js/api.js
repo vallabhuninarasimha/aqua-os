@@ -82,6 +82,24 @@ class AquaAPIClient {
     return this.request(`/api/v1/dashboard/overview?farm_id=${encodeURIComponent(farmId)}`);
   }
 
+  async getFarmOperationsIntelligence(farmId = "farm-alpha") {
+    return this.request(`/api/v1/dashboard/operations?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async getDailyOperationsPlanner(farmId = "farm-alpha", targetDate = null) {
+    let url = `/api/v1/dashboard/planner?farm_id=${encodeURIComponent(farmId)}`;
+    if (targetDate) url += `&target_date=${encodeURIComponent(targetDate)}`;
+    return this.request(url);
+  }
+
+  async getFarmActions(farmId = "farm-alpha", pondId = null, category = null, severity = null) {
+    let url = `/api/v1/dashboard/actions?farm_id=${encodeURIComponent(farmId)}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    if (category) url += `&category=${encodeURIComponent(category)}`;
+    if (severity) url += `&severity=${encodeURIComponent(severity)}`;
+    return this.request(url);
+  }
+
   async getPondDetails(pondId, farmId = "farm-alpha") {
     return this.request(`/api/v1/ponds/${encodeURIComponent(pondId)}?farm_id=${encodeURIComponent(farmId)}`);
   }
@@ -119,6 +137,22 @@ class AquaAPIClient {
         scenario_type: scenarioType,
         duration_hours: durationHours,
       }),
+    });
+  }
+
+  async applySimulationDataset(datasetId, payload) {
+    return this.request(`/api/v1/simulator/datasets/${encodeURIComponent(datasetId)}/apply`, {
+      method: "POST", body: JSON.stringify(payload),
+    });
+  }
+
+  async queueEdgeDryRunCommand(payload) {
+    return this.request("/api/v1/edge/commands", { method: "POST", body: JSON.stringify(payload) });
+  }
+
+  async simulateEdgeCommandResult(commandId, payload) {
+    return this.request(`/api/v1/edge/commands/${encodeURIComponent(commandId)}/simulate-result`, {
+      method: "POST", body: JSON.stringify(payload),
     });
   }
 
@@ -195,6 +229,105 @@ class AquaAPIClient {
     if (batchId) url += `&batch_id=${encodeURIComponent(batchId)}`;
     return this.request(url);
   }
+
+  // Feed Inventory Management Endpoints
+  async getFeedInventorySummary(farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-inventory/summary?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async getFeedProducts(farmId = "farm-alpha", activeOnly = false) {
+    return this.request(`/api/v1/feed-inventory/products?farm_id=${encodeURIComponent(farmId)}&active_only=${activeOnly}`);
+  }
+
+  async createFeedProduct(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-inventory/products?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFeedProduct(productId, data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-inventory/products/${encodeURIComponent(productId)}?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async recordStockReceipt(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-inventory/receipts?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async recordStockAdjustment(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-inventory/adjustments?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getFeedTransactions(farmId = "farm-alpha", productId = null, transactionType = null, pondId = null, startDate = null, endDate = null, limit = 50) {
+    let url = `/api/v1/feed-inventory/transactions?farm_id=${encodeURIComponent(farmId)}&limit=${limit}`;
+    if (productId) url += `&product_id=${encodeURIComponent(productId)}`;
+    if (transactionType) url += `&transaction_type=${encodeURIComponent(transactionType)}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
+    if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
+    return this.request(url);
+  }
+
+  // Feed Planning & Ration Intelligence Endpoints
+  async getFeedPlanOverview(farmId = "farm-alpha", targetDate = null) {
+    let url = `/api/v1/feed-plans/overview?farm_id=${encodeURIComponent(farmId)}`;
+    if (targetDate) url += `&target_date=${encodeURIComponent(targetDate)}`;
+    return this.request(url);
+  }
+
+  async getRationRecommendation(pondId, farmId = "farm-alpha", sessionsCount = 4) {
+    return this.request(`/api/v1/feed-plans/recommendation/${encodeURIComponent(pondId)}?farm_id=${encodeURIComponent(farmId)}&sessions_count=${sessionsCount}`);
+  }
+
+  async listFeedPlans(farmId = "farm-alpha", pondId = null, batchId = null, status = null, dateFrom = null, dateTo = null, limit = 50) {
+    let url = `/api/v1/feed-plans?farm_id=${encodeURIComponent(farmId)}&limit=${limit}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    if (batchId) url += `&batch_id=${encodeURIComponent(batchId)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    if (dateFrom) url += `&date_from=${encodeURIComponent(dateFrom)}`;
+    if (dateTo) url += `&date_to=${encodeURIComponent(dateTo)}`;
+    return this.request(url);
+  }
+
+  async getFeedPlan(planId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-plans/${encodeURIComponent(planId)}?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async createFeedPlan(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-plans?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFeedPlan(planId, data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-plans/${encodeURIComponent(planId)}?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async approveFeedPlan(planId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-plans/${encodeURIComponent(planId)}/approve?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+    });
+  }
+
+  async cancelFeedPlan(planId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/feed-plans/${encodeURIComponent(planId)}/cancel?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+    });
+  }
+
 
   async getAlerts(farmId = "farm-alpha", pondId = null, status = null) {
     let url = `/api/v1/alerts?farm_id=${encodeURIComponent(farmId)}`;
@@ -273,6 +406,169 @@ class AquaAPIClient {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  async getPondBiomassEstimation(pondId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/production/ponds/${encodeURIComponent(pondId)}/biomass?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async getPondHarvestForecast(pondId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/production/ponds/${encodeURIComponent(pondId)}/harvest-forecast?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async recordHarvest(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/production/harvests?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listHarvests(farmId = "farm-alpha", pondId = null, batchId = null, limit = 50) {
+    let url = `/api/v1/production/harvests?farm_id=${encodeURIComponent(farmId)}&limit=${limit}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    if (batchId) url += `&batch_id=${encodeURIComponent(batchId)}`;
+    return this.request(url);
+  }
+
+  async getBatchLifecycle(batchId) {
+    return this.request(`/api/v1/production/batches/${encodeURIComponent(batchId)}/lifecycle`);
+  }
+
+  async getBatchEconomics(batchId) {
+    return this.request(`/api/v1/production/batches/${encodeURIComponent(batchId)}/economics`);
+  }
+
+  async getFarmEconomics(farmId = "farm-alpha", pondId = null) {
+    let url = `/api/v1/production/farm/economics?farm_id=${encodeURIComponent(farmId)}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    return this.request(url);
+  }
+
+  async getBatchesReadiness(farmId = "farm-alpha", pondId = null, status = null) {
+    let url = `/api/v1/production/batches/readiness?farm_id=${encodeURIComponent(farmId)}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    return this.request(url);
+  }
+
+  // --- Farm Expense & Purchase Ledger ---
+  async recordExpense(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/expenses?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listExpenses(farmId = "farm-alpha", params = {}) {
+    let url = `/api/v1/expenses?farm_id=${encodeURIComponent(farmId)}`;
+    if (params.pondId) url += `&pond_id=${encodeURIComponent(params.pondId)}`;
+    if (params.batchId) url += `&batch_id=${encodeURIComponent(params.batchId)}`;
+    if (params.category) url += `&category=${encodeURIComponent(params.category)}`;
+    if (params.status) url += `&status=${encodeURIComponent(params.status)}`;
+    if (params.limit) url += `&limit=${encodeURIComponent(params.limit)}`;
+    if (params.offset) url += `&offset=${encodeURIComponent(params.offset)}`;
+    return this.request(url);
+  }
+
+  async getExpenseSummary(farmId = "farm-alpha", pondId = null) {
+    let url = `/api/v1/expenses/summary?farm_id=${encodeURIComponent(farmId)}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    return this.request(url);
+  }
+
+  async getExpense(expenseId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/expenses/${encodeURIComponent(expenseId)}?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async correctExpense(expenseId, data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/expenses/${encodeURIComponent(expenseId)}/correct?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async reverseExpense(expenseId, reason, farmId = "farm-alpha") {
+    return this.request(`/api/v1/expenses/${encodeURIComponent(expenseId)}/reverse?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify({ reversal_reason: reason }),
+    });
+  }
+
+  async getBatchAttributedExpenses(batchId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/expenses/batches/${encodeURIComponent(batchId)}?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  // --- Farm Cash Flow, Working Capital & Crop Budgets ---
+  async recordCashTransaction(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/finance/cash-transactions?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listCashTransactions(farmId = "farm-alpha", params = {}) {
+    let url = `/api/v1/finance/cash-transactions?farm_id=${encodeURIComponent(farmId)}`;
+    if (params.entryType) url += `&entry_type=${encodeURIComponent(params.entryType)}`;
+    if (params.category) url += `&category=${encodeURIComponent(params.category)}`;
+    if (params.status) url += `&status=${encodeURIComponent(params.status)}`;
+    if (params.startDate) url += `&start_date=${encodeURIComponent(params.startDate)}`;
+    if (params.endDate) url += `&end_date=${encodeURIComponent(params.endDate)}`;
+    if (params.pondId) url += `&pond_id=${encodeURIComponent(params.pondId)}`;
+    if (params.batchId) url += `&batch_id=${encodeURIComponent(params.batchId)}`;
+    if (params.limit) url += `&limit=${encodeURIComponent(params.limit)}`;
+    if (params.offset) url += `&offset=${encodeURIComponent(params.offset)}`;
+    return this.request(url);
+  }
+
+  async voidCashTransaction(transactionId, reason, farmId = "farm-alpha") {
+    return this.request(`/api/v1/finance/cash-transactions/${encodeURIComponent(transactionId)}/void?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify({ void_reason: reason }),
+    });
+  }
+
+  async getOutstandingPayables(farmId = "farm-alpha", pondId = null) {
+    let url = `/api/v1/finance/obligations/payables?farm_id=${encodeURIComponent(farmId)}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    return this.request(url);
+  }
+
+  async getOutstandingReceivables(farmId = "farm-alpha", pondId = null) {
+    let url = `/api/v1/finance/obligations/receivables?farm_id=${encodeURIComponent(farmId)}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    return this.request(url);
+  }
+
+  async getWorkingCapitalSummary(farmId = "farm-alpha", params = {}) {
+    let url = `/api/v1/finance/working-capital/summary?farm_id=${encodeURIComponent(farmId)}`;
+    if (params.startDate) url += `&start_date=${encodeURIComponent(params.startDate)}`;
+    if (params.endDate) url += `&end_date=${encodeURIComponent(params.endDate)}`;
+    return this.request(url);
+  }
+
+  async recordCropBudget(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/finance/budgets?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listBudgetsVsActuals(farmId = "farm-alpha", params = {}) {
+    let url = `/api/v1/finance/budgets?farm_id=${encodeURIComponent(farmId)}`;
+    if (params.batchId) url += `&batch_id=${encodeURIComponent(params.batchId)}`;
+    if (params.pondId) url += `&pond_id=${encodeURIComponent(params.pondId)}`;
+    return this.request(url);
+  }
+
+  async recordCashBalanceSnapshot(data, farmId = "farm-alpha") {
+    return this.request(`/api/v1/finance/cash-balance?farm_id=${encodeURIComponent(farmId)}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getLatestCashBalanceSnapshot(farmId = "farm-alpha") {
+    return this.request(`/api/v1/finance/cash-balance?farm_id=${encodeURIComponent(farmId)}`);
   }
 
   // --- Pond Health, Mortality & Treatments ---

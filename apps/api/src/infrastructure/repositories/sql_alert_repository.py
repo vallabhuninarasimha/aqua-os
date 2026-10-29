@@ -66,13 +66,14 @@ class SQLAlertRepository(IAlertService):
         self._session.commit()
         return self._to_dict(orm)
 
-    def acknowledge(self, alert_id: str, acknowledged_by: str) -> Optional[Dict[str, Any]]:
-        """Transition alert to ACKNOWLEDGED state."""
-        orm = (
-            self._session.query(AlertRecordORM)
-            .filter(AlertRecordORM.alert_id == alert_id)
-            .first()
-        )
+    def acknowledge(
+        self, alert_id: str, acknowledged_by: str, farm_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Transition alert to ACKNOWLEDGED state with tenant scoping."""
+        query = self._session.query(AlertRecordORM).filter(AlertRecordORM.alert_id == alert_id)
+        if farm_id:
+            query = query.filter(AlertRecordORM.farm_id == farm_id)
+        orm = query.first()
         if not orm:
             return None
 
@@ -83,13 +84,14 @@ class SQLAlertRepository(IAlertService):
         self._session.commit()
         return self._to_dict(orm)
 
-    def resolve(self, alert_id: str, resolved_by: str) -> Optional[Dict[str, Any]]:
-        """Transition alert to RESOLVED state."""
-        orm = (
-            self._session.query(AlertRecordORM)
-            .filter(AlertRecordORM.alert_id == alert_id)
-            .first()
-        )
+    def resolve(
+        self, alert_id: str, resolved_by: str, farm_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Transition alert to RESOLVED state with tenant scoping."""
+        query = self._session.query(AlertRecordORM).filter(AlertRecordORM.alert_id == alert_id)
+        if farm_id:
+            query = query.filter(AlertRecordORM.farm_id == farm_id)
+        orm = query.first()
         if not orm:
             return None
 
@@ -121,6 +123,15 @@ class SQLAlertRepository(IAlertService):
         orm.resolved_by = f"AUTO_RECOVERY: {reason}"
         self._session.commit()
         return self._to_dict(orm)
+
+    def get_alert(self, alert_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve alert by ID without farm filtering for authorization checks."""
+        orm = (
+            self._session.query(AlertRecordORM)
+            .filter(AlertRecordORM.alert_id == alert_id)
+            .first()
+        )
+        return self._to_dict(orm) if orm else None
 
     def list(
         self,

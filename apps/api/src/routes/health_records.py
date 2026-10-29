@@ -128,11 +128,28 @@ async def correct_mortality(
     user: UserIdentity = Depends(require_permission(Permission.PONDS_WRITE)),
     session: Session = Depends(get_db_session),
 ) -> Dict[str, Any]:
-    """Audit correction of a previously recorded dead count."""
-    verify_farm_access(user, farm_id)
+    """Audit correction of a previously recorded dead count scoped to authorized farm."""
     service = HealthService(session)
+    existing = service.get_mortality(mortality_id)
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Mortality record '{mortality_id}' not found.",
+        )
+
+    # Enforce that user has access to the actual farm owning the record
+    target_farm_id = existing["farm_id"]
+    verify_farm_access(user, target_farm_id)
+
+    # If query param farm_id was explicitly provided and differs, reject mismatch
+    if farm_id != target_farm_id and user.role.value != "system_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Record '{mortality_id}' belongs to farm '{target_farm_id}', not '{farm_id}'.",
+        )
+
     updated = service.correct_mortality(
-        farm_id=farm_id,
+        farm_id=target_farm_id,
         mortality_id=mortality_id,
         corrected_dead_count=req.corrected_dead_count,
         correction_notes=req.correction_notes,

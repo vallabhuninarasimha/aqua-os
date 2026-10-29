@@ -122,6 +122,8 @@ class FeedingLogRequest(BaseModel):
     notes: Optional[str] = Field(default=None, description="Optional operator notes")
     batch_id: Optional[str] = Field(default=None, description="Optional target batch identifier")
     timestamp: Optional[datetime] = Field(default=None, description="Optional timestamp of feeding application")
+    product_id: Optional[str] = Field(default=None, description="Optional feed inventory product identifier for stock deduction")
+    plan_id: Optional[str] = Field(default=None, description="Optional associated daily feed plan identifier")
 
 
 class StockingBatchUpdateRequest(BaseModel):
@@ -384,6 +386,8 @@ async def log_manual_feeding(
             batch_id=req.batch_id,
             feeding_event_count=req.feeding_event_count,
             timestamp=req.timestamp,
+            product_id=req.product_id,
+            plan_id=req.plan_id,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

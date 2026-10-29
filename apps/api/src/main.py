@@ -23,6 +23,7 @@ from apps.api.src.infrastructure.database import (
 )
 from apps.api.src.routes.alerts import router as alerts_router
 from apps.api.src.routes.auth import router as auth_router
+from apps.api.src.routes.agent import router as agent_router
 from apps.api.src.routes.dashboard import router as dashboard_router
 from apps.api.src.routes.health import router as health_router
 from apps.api.src.routes.ponds import router as ponds_router
@@ -32,6 +33,11 @@ from apps.api.src.routes.health_records import router as health_records_router
 from apps.api.src.routes.simulator import router as simulator_router
 from apps.api.src.routes.telemetry import router as telemetry_router
 from apps.api.src.routes.water import router as water_router
+from apps.api.src.routes.feed_inventory import router as feed_inventory_router
+from apps.api.src.routes.feed_plans import router as feed_plans_router
+from apps.api.src.routes.expenses import router as expenses_router
+from apps.api.src.routes.edge_control import router as edge_control_router
+from apps.api.src.routes.finance import router as finance_router
 from apps.api.src.services.simulator_service import simulator_service
 
 
@@ -85,6 +91,7 @@ def create_app() -> FastAPI:
     # Register modular routes
     app.include_router(health_router)
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(agent_router, prefix=settings.api_prefix)
     app.include_router(ponds_router, prefix=settings.api_prefix)
     app.include_router(telemetry_router, prefix=settings.api_prefix)
     app.include_router(dashboard_router, prefix=settings.api_prefix)
@@ -94,6 +101,11 @@ def create_app() -> FastAPI:
     app.include_router(production_router, prefix=settings.api_prefix)
     app.include_router(health_records_router, prefix=settings.api_prefix)
     app.include_router(water_router, prefix=settings.api_prefix)
+    app.include_router(feed_inventory_router, prefix=settings.api_prefix)
+    app.include_router(feed_plans_router, prefix=settings.api_prefix)
+    app.include_router(expenses_router, prefix=settings.api_prefix)
+    app.include_router(edge_control_router, prefix=settings.api_prefix)
+    app.include_router(finance_router, prefix=settings.api_prefix)
 
     # Mount static assets and serve dashboard UI
     dashboard_dir = Path(__file__).resolve().parent.parent.parent / "dashboard"

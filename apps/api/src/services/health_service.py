@@ -128,6 +128,10 @@ class HealthService:
             "raised_alerts": raised_alerts,
         }
 
+    def get_mortality(self, mortality_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve mortality record by ID without farm filtering for authorization checks."""
+        return self._health_repo.get_mortality(mortality_id)
+
     def correct_mortality(
         self,
         farm_id: str,
