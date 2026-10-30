@@ -46,6 +46,7 @@ class PondCard(BaseModel):
     status: str  # NORMAL, WARNING, CRITICAL, DEGRADED, UNKNOWN
     is_safe: bool
     is_simulated: bool
+    data_source: str = "NO_DATA"  # MEASURED, SIMULATED, or NO_DATA
     timestamp: Optional[datetime] = None
     freshness_seconds: Optional[float] = None
     is_stale: bool = False
@@ -141,7 +142,8 @@ async def get_dashboard_overview(
                     name=pond.name,
                     status="UNKNOWN",
                     is_safe=False,
-                    is_simulated=True,
+                    is_simulated=False,
+                    data_source="NO_DATA",
                     timestamp=None,
                     freshness_seconds=None,
                     is_stale=True,
@@ -260,6 +262,7 @@ async def get_dashboard_overview(
                 status=current_status,
                 is_safe=is_safe,
                 is_simulated=packet.is_simulated,
+                data_source="SIMULATED" if packet.is_simulated else "MEASURED",
                 timestamp=packet_time,
                 freshness_seconds=round(freshness, 1),
                 is_stale=is_stale,
