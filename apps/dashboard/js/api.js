@@ -643,6 +643,16 @@ class AquaAPIClient {
     });
   }
 
+  async analyzeShrimpGrading(pondId, weightsG, gradeBands, farmId = this.currentUser?.farm_id || "farm-alpha") {
+    return this.request(
+      `/api/v1/production/ponds/${encodeURIComponent(pondId)}/grading/analyze?farm_id=${encodeURIComponent(farmId)}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ weights_g: weightsG, grade_bands: gradeBands }),
+      }
+    );
+  }
+
   /**
    * Connect to real-time Server-Sent Events stream with backoff recovery.
    */
