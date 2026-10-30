@@ -1,6 +1,8 @@
 """Shrimp Growth & Production Intelligence REST routes."""
 
 from datetime import datetime, timezone
+import json
+import uuid
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -13,6 +15,7 @@ from apps.api.src.security.models import Permission, UserIdentity
 from apps.api.src.services.growth_production_service import GrowthProductionService
 from apps.api.src.domain.shrimp_grading import analyze_shrimp_sample
 from apps.api.src.infrastructure.repositories.sql_pond_repository import SQLPondRepository
+from apps.api.src.infrastructure.models import ShrimpGradingSampleORM
 
 router = APIRouter(prefix="/production", tags=["Production Intelligence"])
 
@@ -405,10 +408,52 @@ async def analyze_pond_shrimp_grading(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    sampled_at = datetime.now(timezone.utc)
+    grade_sample_id = str(uuid.uuid4())
     result.update({
+        "grade_sample_id": grade_sample_id,
         "farm_id": farm_id,
         "pond_id": pond_id,
         "analyzed_by": user.username,
-        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "evaluated_at": sampled_at.isoformat(),
     })
+    session.add(ShrimpGradingSampleORM(
+        grade_sample_id=grade_sample_id,
+        farm_id=farm_id,
+        pond_id=pond_id,
+        sample_count=result["sample_count"],
+        average_body_weight_g=result["average_body_weight_g"],
+        average_count_per_kg=result["average_count_per_kg"],
+        sample_weights_json=json.dumps(req.weights_g, separators=(",", ":")),
+        grade_bands_json=json.dumps([band.model_dump() for band in req.grade_bands], separators=(",", ":")),
+        result_json=json.dumps(result, separators=(",", ":"), ensure_ascii=False),
+        recorded_by=user.username,
+        sampled_at=sampled_at,
+    ))
+    session.commit()
     return result
+
+
+@router.get("/ponds/{pond_id}/grading/samples", response_model=List[Dict[str, Any]])
+async def list_pond_grading_samples(
+    pond_id: str,
+    farm_id: str = Query(default=settings.default_farm_id, description="Farm identifier"),
+    limit: int = Query(default=20, ge=1, le=100),
+    user: UserIdentity = Depends(require_permission(Permission.PONDS_READ)),
+    session: Session = Depends(get_db_session),
+) -> List[Dict[str, Any]]:
+    """Retrieve persisted measured shrimp grading samples for a pond."""
+    verify_farm_access(user, farm_id)
+    if SQLPondRepository(session).get(farm_id, pond_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pond not found in this farm.")
+    rows = (
+        session.query(ShrimpGradingSampleORM)
+        .filter(
+            ShrimpGradingSampleORM.farm_id == farm_id,
+            ShrimpGradingSampleORM.pond_id == pond_id,
+        )
+        .order_by(ShrimpGradingSampleORM.sampled_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [json.loads(row.result_json) for row in rows]
