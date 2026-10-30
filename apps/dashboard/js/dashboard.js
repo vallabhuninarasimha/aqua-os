@@ -305,6 +305,40 @@
     });
   }
 
+
+  const agentForm = $('#agentForm');
+  if (agentForm) {
+    agentForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const output = $('#agentResult');
+      const button = $('#agentSubmit');
+      const question = $('#agentQuestion').value.trim();
+      if (!question) return;
+      button.disabled = true;
+      button.textContent = 'Reviewing farm evidence…';
+      output.textContent = 'Retrieving authorized farm records and evaluating evidence…';
+      try {
+        const result = await api.queryFarmAgent(question, FARM_ID());
+        const tools = (result.evidence || []).map(item => item.tool).filter(Boolean);
+        const review = result.decision_review;
+        const details = [
+          `Intent: ${result.intent || 'UNSPECIFIED'}`,
+          `Mode: ${result.mode || 'DETERMINISTIC'}`,
+          `Evaluated: ${result.evaluated_at || 'timestamp unavailable'}`,
+          `Evidence sources: ${tools.length ? tools.join(', ') : 'No additional tool evidence'}`,
+          review ? `Decision review: ${review.finding_count} findings (${review.status})` : '',
+          ...(result.limitations || []).map(item => `Limitation: ${item}`),
+        ].filter(Boolean);
+        output.textContent = `${result.answer || 'No answer returned.'}\n\n${details.join('\n')}`;
+      } catch (error) {
+        output.textContent = `Farm agent unavailable: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Analyze farm evidence';
+      }
+    });
+  }
+
   const updateClock = () => {
     const node = $('#clock');
     if (node) node.textContent = new Date().toLocaleString('en-IN');
