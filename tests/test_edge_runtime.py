@@ -197,3 +197,24 @@ def test_bounded_queue_guardrail_prevents_silent_loss(tmp_path: Path):
         edge.process_telemetry(make_test_packet("pond-01", 6.0, ts_4))
 
     assert "exceeded maximum capacity" in str(exc_info.value)
+
+
+def test_edge_rejects_packet_from_another_farm(tmp_path: Path):
+    storage = SQLiteEdgeStorage(tmp_path / "edge_scope.db")
+    edge = EdgeRuntime(storage=storage, transport=MockSyncTransport(initially_connected=False))
+    packet = make_test_packet().model_copy(update={"farm_id": "farm-beta"})
+
+    with pytest.raises(ValueError, match="does not match gateway farm"):
+        edge.process_telemetry(packet)
+
+    assert edge.get_diagnostics().queue_depth == 0
+
+
+def test_edge_rejects_unregistered_pond(tmp_path: Path):
+    storage = SQLiteEdgeStorage(tmp_path / "edge_pond_scope.db")
+    edge = EdgeRuntime(storage=storage, transport=MockSyncTransport(initially_connected=False))
+
+    with pytest.raises(ValueError, match="not registered in gateway farm"):
+        edge.process_telemetry(make_test_packet(pond_id="pond-99"))
+
+    assert edge.get_diagnostics().queue_depth == 0
