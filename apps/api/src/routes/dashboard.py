@@ -26,6 +26,7 @@ from apps.api.src.security.dependencies import (
     verify_farm_access,
 )
 from apps.api.src.security.models import Permission, UserIdentity
+from apps.api.src.services.simulator_service import simulator_service
 from apps.api.src.services.telemetry_broadcaster import broadcaster
 from apps.api.src.services.water_service import WaterManagementService
 from packages.telemetry_schema.models import MetricType
@@ -46,7 +47,6 @@ class PondCard(BaseModel):
     status: str  # NORMAL, WARNING, CRITICAL, DEGRADED, UNKNOWN
     is_safe: bool
     is_simulated: bool
-    data_source: str = "NO_DATA"  # MEASURED, SIMULATED, or NO_DATA
     timestamp: Optional[datetime] = None
     freshness_seconds: Optional[float] = None
     is_stale: bool = False
@@ -93,6 +93,7 @@ class DashboardOverviewResponse(BaseModel):
     summary: DashboardSummary
     ponds: List[PondCard]
     edge_status: EdgeGatewayStatus
+    simulator_status: dict
     biological_notice: str
     intake_pump_summary: Optional[Dict[str, Any]] = None
 
@@ -142,8 +143,7 @@ async def get_dashboard_overview(
                     name=pond.name,
                     status="UNKNOWN",
                     is_safe=False,
-                    is_simulated=False,
-                    data_source="NO_DATA",
+                    is_simulated=True,
                     timestamp=None,
                     freshness_seconds=None,
                     is_stale=True,
@@ -262,7 +262,6 @@ async def get_dashboard_overview(
                 status=current_status,
                 is_safe=is_safe,
                 is_simulated=packet.is_simulated,
-                data_source="SIMULATED" if packet.is_simulated else "MEASURED",
                 timestamp=packet_time,
                 freshness_seconds=round(freshness, 1),
                 is_stale=is_stale,
@@ -317,6 +316,7 @@ async def get_dashboard_overview(
         summary=summary,
         ponds=pond_cards,
         edge_status=edge_status,
+        simulator_status=simulator_service.get_status(),
         biological_notice=(
             "Provisional baseline standards for Litopenaeus vannamei. "
             "Biological thresholds must be calibrated against on-site water chemistry "
