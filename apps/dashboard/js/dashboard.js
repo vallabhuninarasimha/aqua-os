@@ -280,7 +280,7 @@
         return;
       }
       try {
-        const weights = $('#gradingWeights').value.split(/[,\\s]+/).filter(Boolean).map(Number);
+        const weights = $('#gradingWeights').value.split(',').map(value => value.trim()).filter(Boolean).map(Number);
         if (!weights.length || weights.some(value => !Number.isFinite(value))) {
           throw new Error('Enter valid comma-separated individual weights in grams.');
         }
