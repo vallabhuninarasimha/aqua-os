@@ -7,6 +7,7 @@ grade conventions are never hard-coded.
 from __future__ import annotations
 
 from collections import defaultdict
+import math
 from typing import Any
 
 
@@ -42,7 +43,7 @@ def analyze_shrimp_sample(
             raise ValueError("Each grade band requires a label of 1 to 64 characters.")
         if label.lower() in labels:
             raise ValueError(f"Duplicate grade label: {label}.")
-        if low <= 0 or high < low:
+        if not math.isfinite(low) or not math.isfinite(high) or low <= 0 or high < low:
             raise ValueError(f"Invalid count/kg range for grade '{label}'.")
         labels.add(label.lower())
         bands.append({"label": label, "min": low, "max": high})
