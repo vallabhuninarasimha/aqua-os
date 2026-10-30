@@ -3,6 +3,7 @@
 
   const FARM_ID = () => api.currentUser?.farm_id || 'farm-alpha';
   const $ = (selector, root = document) => root.querySelector(selector);
+  const $ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const state = { overview: null, selectedPondId: null, refreshTimer: null, streamState: 'DISCONNECTED' };
 
   function setText(selector, value) {
@@ -197,7 +198,7 @@
     const values = {
       '#pondDO': formatMetric(pond, 'dissolved_oxygen'),
       '#pondTemp': formatMetric(pond, 'temperature'),
-      '#pondph': formatMetric(pond, 'ph'),
+      '#pondPH': formatMetric(pond, 'ph'),
       '#pondSalinity': formatMetric(pond, 'salinity'),
     };
     Object.entries(values).forEach(([selector, value]) => setText(selector, value));
@@ -266,6 +267,43 @@
       showLogin();
     }
   });
+
+
+  const gradingForm = $('#gradingForm');
+  if (gradingForm) {
+    gradingForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const resultNode = $('#gradingResult');
+      const button = $('#gradingSubmit');
+      if (!state.selectedPondId) {
+        resultNode.textContent = 'Select a pond before analyzing a sample.';
+        return;
+      }
+      try {
+        const weights = $('#gradingWeights').value.split(/[,,\\s]+/).filter(Boolean).map(Number);
+        if (!weights.length || weights.some(value => !Number.isFinite(value))) {
+          throw new Error('Enter valid comma-separated individual weights in grams.');
+        }
+        let bands;
+        try {
+          bands = JSON.parse($('#gradingBands').value);
+        } catch {
+          throw new Error('Grade bands must be valid JSON.');
+        }
+        if (!Array.isArray(bands)) throw new Error('Grade bands must be a JSON array.');
+        button.disabled = true;
+        button.textContent = 'Analyzing…';
+        resultNode.textContent = 'Submitting measured sample to the farm API…';
+        const result = await api.analyzeShrimpGrading(state.selectedPondId, weights, bands, FARM_ID());
+        resultNode.textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        resultNode.textContent = `Grading analysis failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Analyze measured sample';
+      }
+    });
+  }
 
   const updateClock = () => {
     const node = $('#clock');
