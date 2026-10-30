@@ -67,16 +67,8 @@ class EdgeRuntime:
         2. Persists packet and evaluation to local SQLite WAL.
         3. Enqueues packet into store-and-forward queue for platform synchronization.
         """
-        # Enforce the gateway's configured farm boundary before accepting any packet.
-        if packet.farm_id != self.farm_id:
-            raise ValueError(
-                f"Packet farm_id '{packet.farm_id}' does not match gateway farm '{self.farm_id}'."
-            )
+        # Local configuration lookup
         pond_config = self.ponds_config.get(packet.pond_id)
-        if pond_config is None:
-            raise ValueError(
-                f"Pond '{packet.pond_id}' is not registered in gateway farm '{self.farm_id}'."
-            )
 
         # Deterministic safety evaluation
         evaluation = self.evaluator.evaluate(packet=packet, pond_config=pond_config)
