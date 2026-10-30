@@ -53,6 +53,16 @@
         <div class="panel-heading"><div><h3>Active Alerts</h3><p>Backend-evaluated farm conditions</p></div></div>
         <div id="liveAlerts" aria-live="polite"><p class="safety-note">Loading persisted farm alerts…</p></div>
       </section>
+      <section class="panel">
+        <div class="panel-heading"><div><h3>AI Farm Operations Advisor</h3><p>Ask questions against authorized, current farm records</p></div><span class="live-tag">EVIDENCE GROUNDED</span></div>
+        <form class="grading-form" id="agentForm">
+          <label>Farm operations question
+            <textarea id="agentQuestion" required maxlength="1000" placeholder="Which ponds need immediate operator attention, and what measured evidence supports it?"></textarea>
+          </label>
+          <button type="submit" id="agentSubmit">Analyze farm evidence</button>
+        </form>
+        <div id="agentResult" class="grading-result" aria-live="polite">Agent responses are advisory and read-only. They cannot operate equipment.</div>
+      </section>
     </aside>
   </div>
 </section>
