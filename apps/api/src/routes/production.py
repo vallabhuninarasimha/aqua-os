@@ -1,6 +1,6 @@
 """Shrimp Growth & Production Intelligence REST routes."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -409,6 +409,6 @@ async def analyze_pond_shrimp_grading(
         "farm_id": farm_id,
         "pond_id": pond_id,
         "analyzed_by": user.username,
-        "evaluated_at": datetime.now().astimezone().isoformat(),
+        "evaluated_at": datetime.now(timezone.utc).isoformat(),
     })
     return result
