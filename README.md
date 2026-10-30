@@ -119,30 +119,26 @@ Default development seed credentials:
 
 ---
 
-### 4. Operating the Farm Dashboard
+### 4. Operating the Realtime Farm Dashboard
 
-1. Start the API and open `http://localhost:8000/`.
-2. Sign in with an authenticated farm account. The dashboard reads the farm's persisted API data; it does not generate browser-side pond readings.
-3. Pond cards and alerts are populated from the authenticated dashboard API and live telemetry stream. Missing or stale sensor data must remain visibly unavailable/degraded; it is not treated as a healthy reading.
-4. Historical trends are shown only when persisted telemetry history exists.
-5. Physical equipment remains unavailable until the edge gateway, actuator feedback, electrical protections, emergency stop, and commissioning checks have been verified on site.
+1. Navigate to `http://localhost:8000/` in your browser.
+2. Sign in using the quick-login buttons (e.g. **Operator**).
+3. In the header control bar:
+   - Click **`▶ Start Sim (3s)`** to start the embedded background simulation feed.
+   - Or click **`⏭ Step 1x`** to advance simulation cycles manually.
+4. Observe all 20 ponds updating in real time via Server-Sent Events (SSE) with active status badges (`NORMAL`, `WARNING`, `CRITICAL`, `DEGRADED`, `UNKNOWN`) and freshness counters.
+5. Click any pond card (e.g., `pond-03`) to open the **Pond Detail Modal** featuring:
+   - Biological metadata & target species (*L. vannamei*)
+   - Native SVG time-series trend charts for DO, Temperature, pH, and Salinity with biological safe-zone thresholds
+   - Active safety conditions and actionable operational recommendations
+6. Test scenario injection:
+   - Select `pond-03` and choose `Aerator Failure (Sudden Hypoxia)` -> click **Inject**.
+   - Watch DO drop below the critical 3.0 mg/L threshold in real-time, triggering red hypoxia alerts.
+   - Click **Reset Normal** to restore normal diurnal biological conditions.
 
-The standalone simulator below is a development/engineering tool only. It is not started by the production API and must never be presented as live farm telemetry.
+---
 
-### 5. AI, Biological Intelligence & Operator Workflow
-
-Aqua OS combines deterministic domain engines with an optional evidence-grounded language model:
-- **Farm Operations Agent**: authenticated, farm-scoped, read-only tool routing across pond telemetry, low-oxygen risk, sensor freshness, production, feed inventory, water, power, health, and cross-module farm actions.
-- **Decision review**: source-linked advisory findings with severity, confidence, provenance, operator approval/rejection, and outcome tracking. LLM text cannot issue actuator commands or change biological safety thresholds.
-- **Feeding intelligence**: biomass- and sample-aware ration recommendations with DO/temperature/tray feedback. Feed plans remain subject to operator review and approval.
-- **Aeration and safety**: deterministic threshold evaluation and local edge sovereignty are the safety authority. AI may explain evidence and recommend review; it does not replace the safety engine.
-- **Shrimp health and production**: mortality, clinical observations, growth samples, biomass estimates, FCR, harvest projections, and treatment withdrawal restrictions remain distinct evidence-backed records.
-- **Shrimp size grading**: `POST /api/v1/production/ponds/{pond_id}/grading/analyze` classifies individually weighed sample shrimp using operator-configured count-per-kg bands, persists the sample and returns average body weight, count/kg, size distribution, and unclassified sample count. `GET /api/v1/production/ponds/{pond_id}/grading/samples` retrieves the audit history. Grade bands are buyer/farm-specific and must be configured by the operator.
-
-The grading endpoint accepts a list of individual weights in grams and explicit non-overlapping grade bands. It does not claim camera-based recognition, whole-pond grade, or harvest readiness. Camera-based grading requires a commissioned camera, controlled image capture, a validated vision model, and field calibration; none is inferred from sample weights.
-
-### 6. Running the 20-Pond Telemetry Simulator CLI
-
+### 5. Running the 20-Pond Telemetry Simulator CLI
 
 Launch the standalone deterministic multi-pond physics simulator:
 ```bash
@@ -154,7 +150,7 @@ Options:
 - `--seed`: Pseudorandom seed for reproducible physics & noise (default: `42`).
 - `--fault-pond`: Pond ID to inject an aerator failure scenario into for testing (default: `pond-03`).
 
-### 7. Running the Sovereign Edge Runtime Daemon
+### 6. Running the Sovereign Edge Runtime Daemon
 
 Launch the edge store-and-forward gateway daemon:
 ```bash
