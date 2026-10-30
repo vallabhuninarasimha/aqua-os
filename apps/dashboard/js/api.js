@@ -643,6 +643,17 @@ class AquaAPIClient {
     });
   }
 
+  async queryFarmAgent(question, farmId = this.currentUser?.farm_id || "farm-alpha", conversationId = null) {
+    return this.request("/api/v1/agent/query", {
+      method: "POST",
+      body: JSON.stringify({
+        question,
+        farm_id: farmId,
+        ...(conversationId ? { conversation_id: conversationId } : {}),
+      }),
+    });
+  }
+
   async analyzeShrimpGrading(pondId, weightsG, gradeBands, farmId = this.currentUser?.farm_id || "farm-alpha") {
     return this.request(
       `/api/v1/production/ponds/${encodeURIComponent(pondId)}/grading/analyze?farm_id=${encodeURIComponent(farmId)}`,
