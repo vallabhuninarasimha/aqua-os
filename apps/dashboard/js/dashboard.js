@@ -118,6 +118,37 @@
     });
   }
 
+  function renderAlerts(ponds) {
+    const container = $('#liveAlerts');
+    if (!container) return;
+    container.replaceChildren();
+    const alerts = (ponds || []).flatMap(pond =>
+      (pond.active_alerts || []).map(message => ({ pond, message }))
+    ).slice(0, 12);
+    if (!alerts.length) {
+      const empty = document.createElement('p');
+      empty.className = 'safety-note';
+      empty.textContent = 'No active alerts are reported by the current farm evaluation.';
+      container.appendChild(empty);
+      return;
+    }
+    alerts.forEach(({ pond, message }) => {
+      const row = document.createElement('div');
+      row.className = 'alert-line';
+      const icon = document.createElement('span');
+      icon.className = 'alert-symbol ' + (pond.status === 'CRITICAL' ? 'red-bg' : 'amber-bg');
+      icon.textContent = '!';
+      const content = document.createElement('div');
+      const title = document.createElement('b');
+      title.textContent = `${pond.name || pond.pond_id} · ${message}`;
+      const detail = document.createElement('small');
+      detail.textContent = `Evidence: ${pond.data_source || 'NO_DATA'} · ${pond.timestamp ? new Date(pond.timestamp).toLocaleString() : 'No telemetry timestamp'}`;
+      content.append(title, detail);
+      row.append(icon, content);
+      container.appendChild(row);
+    });
+  }
+
   function renderOverview(data) {
     state.overview = data;
     const ponds = data.ponds || [];
@@ -141,6 +172,7 @@
     const critical = $('.critical b');
     if (critical) critical.textContent = `${summary.critical_ponds || 0} Critical`;
     renderPonds(ponds);
+    renderAlerts(ponds);
     const updated = new Date(data.evaluated_at);
     setText('.farm-foot span:first-child', `Evaluated: ${Number.isNaN(updated.getTime()) ? 'unknown' : updated.toLocaleString()}`);
     const edge = data.edge_status || {};
