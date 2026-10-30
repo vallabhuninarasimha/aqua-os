@@ -30,6 +30,7 @@ from apps.api.src.routes.ponds import router as ponds_router
 from apps.api.src.routes.power import router as power_router
 from apps.api.src.routes.production import router as production_router
 from apps.api.src.routes.health_records import router as health_records_router
+from apps.api.src.routes.simulator import router as simulator_router
 from apps.api.src.routes.telemetry import router as telemetry_router
 from apps.api.src.routes.water import router as water_router
 from apps.api.src.routes.feed_inventory import router as feed_inventory_router
@@ -37,6 +38,7 @@ from apps.api.src.routes.feed_plans import router as feed_plans_router
 from apps.api.src.routes.expenses import router as expenses_router
 from apps.api.src.routes.edge_control import router as edge_control_router
 from apps.api.src.routes.finance import router as finance_router
+from apps.api.src.services.simulator_service import simulator_service
 
 
 @asynccontextmanager
@@ -50,7 +52,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         seed_default_users_if_empty(session)
 
     yield
-    # No background demo simulator is started by the production API.
+    # Shutdown: Clean up background simulation if active
+    simulator_service.stop()
 
 
 def create_app() -> FastAPI:
@@ -92,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(ponds_router, prefix=settings.api_prefix)
     app.include_router(telemetry_router, prefix=settings.api_prefix)
     app.include_router(dashboard_router, prefix=settings.api_prefix)
+    app.include_router(simulator_router, prefix=settings.api_prefix)
     app.include_router(alerts_router, prefix=settings.api_prefix)
     app.include_router(power_router, prefix=settings.api_prefix)
     app.include_router(production_router, prefix=settings.api_prefix)
