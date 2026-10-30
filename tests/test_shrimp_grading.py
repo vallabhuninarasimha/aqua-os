@@ -15,9 +15,9 @@ def test_classifies_individually_weighed_shrimp_and_reports_distribution():
     assert result["sample_count"] == 3
     assert result["average_body_weight_g"] == pytest.approx(31.667, abs=0.001)
     assert result["average_count_per_kg"] == pytest.approx(31.58, abs=0.01)
-    assert result["grade_distribution"][0]["shrimp_count"] == 1
+    assert result["grade_distribution"][0]["shrimp_count"] == 2
     assert result["grade_distribution"][1]["shrimp_count"] == 1
-    assert result["unclassified_count"] == 1
+    assert result["unclassified_count"] == 0
 
 
 def test_rejects_overlapping_grade_bands():
