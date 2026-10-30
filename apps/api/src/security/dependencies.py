@@ -1,7 +1,7 @@
 """FastAPI dependencies enforcing bearer authentication, RBAC and tenant isolation."""
 from typing import Callable, Optional
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from apps.api.src.dependencies import get_db_session
@@ -16,14 +16,17 @@ def get_identity_provider(session: Session = Depends(get_db_session)) -> IIdenti
 
 def get_current_user(
     authorization: Optional[str] = Header(None, description="Bearer access token"),
+    token: Optional[str] = Query(None, description="Token query parameter for SSE/EventSource"),
     identity_provider: IIdentityProvider = Depends(get_identity_provider),
 ) -> UserIdentity:
-    """Authenticate using the Authorization header only; tokens in URLs leak via logs/history."""
+    """Authenticate using Authorization header, with query token fallback for SSE/EventSource."""
     raw_token = None
     if authorization:
         scheme, _, credentials = authorization.partition(" ")
         if scheme.lower() == "bearer" and credentials.strip():
             raw_token = credentials.strip()
+    elif token and token.strip():
+        raw_token = token.strip()
     if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,39 +1,994 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#07111f"><title>Aqua OS | Owner Dashboard</title><link rel="stylesheet" href="/static/css/dashboard.css?v=20261030-3"><style id="design2-critical-styles">
-/* Design 2 owner dashboard: resilient critical styling */
-:root{color-scheme:dark;--bg:#071321;--side:#091827;--panel:#0d1d30;--panel2:#10243a;--line:#203750;--txt:#e7f0fa;--muted:#8da2bb;--blue:#1688f5;--cyan:#35bdf2;--green:#18d69a;--amber:#f3b84f;--red:#ff5c70}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);font:13px Inter,"Segoe UI",Arial,sans-serif}body{background:radial-gradient(ellipse at 62% -20%,#17334d 0,transparent 48%),var(--bg)}button,input,select{font:inherit}a{color:inherit;text-decoration:none}button{cursor:pointer}
-.app-shell{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:218px;padding:20px 12px 14px;background:linear-gradient(180deg,#0a1b2c,#071321);border-right:1px solid #20364c;display:flex;flex-direction:column;z-index:30}.brand{height:48px;display:flex;align-items:center;gap:10px;padding:0 9px 15px;border-bottom:1px solid #1b3046}.brand-icon{width:31px;height:31px;border:1px solid #249bc8;border-radius:50%;display:grid;place-items:center;color:#53cafa;font-size:18px}.brand b{font-size:14px;letter-spacing:.35px}.brand em{font-style:normal;color:#39bdf1}.main-nav{display:grid;gap:5px;padding-top:18px;overflow:auto}.nav-item{height:39px;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:7px;color:#a8bbcf;font-size:12px;white-space:nowrap}.nav-item>span{width:17px;text-align:center;font-size:16px;color:#a4bad0}.nav-item:hover{background:#112940;color:#fff}.nav-item.active{background:linear-gradient(90deg,#174365,#102b43);color:#fff;box-shadow:inset 3px 0 #28aaff}.nav-item.active>span{color:#55c6ff}.sidebar-bottom{margin-top:auto;padding:14px 7px 0;border-top:1px solid #20364c;display:flex;align-items:center;gap:9px;color:#9bb0c6;font-size:11px}.connection-dot{width:8px;height:8px;border-radius:50%;background:#8a9bad}.connection-dot.online{background:var(--green);box-shadow:0 0 9px #18d69a88}.connection-dot.offline{background:var(--red)}.sidebar-bottom button{margin-left:auto;border:1px solid #2b4560;background:#10243a;color:#d6e5f3;border-radius:6px;width:29px;height:27px}
-.main-content{margin-left:218px;max-width:1800px;padding:0 30px 32px}.topbar{height:72px;display:flex;align-items:center;gap:18px;border-bottom:1px solid #1c3249;background:#081725ed;position:sticky;top:0;z-index:20;backdrop-filter:blur(14px)}.top-brand-mobile{display:none}.search-wrap{height:38px;width:min(370px,38vw);display:flex;align-items:center;gap:10px;padding:0 12px;background:#0c1d30;border:1px solid #203750;border-radius:8px;color:#91a8c0}.search-wrap span{font-size:21px}.search-wrap input{border:0;outline:0;background:transparent;color:var(--txt);width:100%;font-size:11px}.top-actions{margin-left:auto;display:flex;align-items:center;gap:13px}.system-badge{font-size:11px;color:#a8bbcf}.system-badge i,.live-chip i{display:inline-block;width:7px;height:7px;background:#8799aa;border-radius:50%;margin-right:6px}.system-badge.online i,.live-chip i{background:var(--green);box-shadow:0 0 8px #18d69a}.notification-button{position:relative;background:transparent;border:0;color:#d3e2f3;font-size:20px}.notification-button b{position:absolute;right:-6px;top:-5px;border-radius:10px;background:#ed4d68;color:#fff;font-size:9px;min-width:15px;height:15px;display:grid;place-items:center}.profile-button{width:34px;height:34px;border-radius:50%;border:1px solid #4c83a8;background:#193b5b;color:#c4e9ff;font-weight:700}.user-label b,.user-label small{display:block}.user-label b{font-size:11px}.user-label small{font-size:10px;color:#8da2bb;margin-top:3px}
-.page-section{display:none;padding-top:27px}.page-section.active{display:block}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.page-heading h1{font-size:26px;letter-spacing:-.5px;margin:0 0 6px;font-weight:750}.page-heading p{font-size:12px;color:#93a8bf;margin:0}.heading-actions{display:flex;gap:9px;align-items:center}.heading-actions select{background:#0d2034;border:1px solid #29435e;border-radius:7px;color:#d0deed;padding:10px 12px;font-size:11px}.refresh-button{height:36px;width:36px;border:1px solid #29435e;border-radius:7px;background:#10263d;color:#b7cce0;font-size:18px}
-.kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px;margin-bottom:16px}.kpi-card{min-width:0;padding:16px 17px 14px;background:linear-gradient(145deg,#112942,#0c1c2e);border:1px solid #203a55;border-radius:10px;box-shadow:0 9px 22px #0002}.kpi-card>small{font-size:10px;color:#93a9c0}.kpi-card>div{display:flex;align-items:baseline;gap:6px;margin-top:9px}.kpi-card>div>b,.kpi-card>b{font-size:27px;letter-spacing:-.7px;font-weight:750}.kpi-card .unit{font-size:11px;color:#adbed0}.kpi-card p{font-size:10px;color:#8ba1b9;margin:7px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-card p.positive{color:var(--green)}.kpi-icon{margin-left:auto;color:#4dc4f4;font-size:18px}
-.panel{background:linear-gradient(150deg,#0e2237,#0b1a2b);border:1px solid #203a55;border-radius:10px;box-shadow:0 10px 25px #0002;min-width:0;overflow:hidden}.trend-panel{padding:17px 18px 12px}.panel-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.panel-title h2{font-size:14px;margin:0;font-weight:700}.panel-title h2 span{font-weight:500;color:#91a8c0}.panel-title p{font-size:10px;color:#859bb4;margin:5px 0 0}.live-chip{font-size:10px;color:#b0c3d6;border:1px solid #23445b;background:#0c2639;border-radius:14px;padding:6px 10px}.metric-tabs{display:flex;gap:7px;margin-top:15px}.metric-tab{padding:7px 14px;border:1px solid #25415c;border-radius:6px;background:#0d2237;color:#9eb3c9;font-size:10px}.metric-tab.active{background:#1269c8;border-color:#238cf0;color:white;box-shadow:0 3px 10px #0864c455}.chart-stage{height:285px;position:relative;margin-top:10px;border-bottom:1px solid #1b3048}.chart-stage canvas{width:100%;height:100%;display:block}.chart-empty{position:absolute;inset:0;display:grid;place-items:center;color:#8aa0b8;font-size:11px;background:#0b1a2a88}.chart-tooltip{position:absolute;display:none;top:12px;right:12px;background:#10243a;border:1px solid #29435e;border-radius:6px;padding:8px 10px;font-size:10px;color:#e2edf8;pointer-events:none}.chart-footer{display:flex;justify-content:space-between;padding-top:9px;color:#8197b0;font-size:10px}
-.dashboard-bottom{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:14px}.pond-summary,.alert-summary{padding:15px 16px}.panel-title>a{font-size:10px;color:#48bdf4;white-space:nowrap}.pond-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:13px}.pond-card{background:#0a1c2e;border:1px solid #203a55;border-radius:8px;padding:11px;min-width:0;text-align:left;color:inherit}.pond-card:hover{border-color:#399ad2;background:#102943}.pond-card strong{display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pond-card small{display:block;color:#8ba1b9;font-size:9px;margin-top:5px}.pond-card .pond-values{font-size:10px;color:#c2d2e2;margin-top:9px}.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:#7d8ea2}.status-dot.healthy{background:var(--green)}.status-dot.warning{background:var(--amber)}.status-dot.critical{background:var(--red)}.alert-row{display:grid;grid-template-columns:5px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #1b3048}.alert-row:last-child{border:0}.alert-bar{height:32px;border-radius:4px;background:#7d8ea2}.alert-row.critical .alert-bar{background:var(--red)}.alert-row.warning .alert-bar{background:var(--amber)}.alert-row b{font-size:10px;display:block}.alert-row small{display:block;color:#8ba1b9;font-size:9px;margin-top:4px;line-height:1.4}.alert-row time{font-size:9px;color:#8298b1;white-space:nowrap}.safety-note{display:flex;gap:11px;align-items:center;margin-top:14px;padding:11px 13px;border:1px solid #35475c;border-radius:8px;background:#111f30;color:#98adc3;font-size:10px;line-height:1.5}.safety-note b{color:#d2deeb;white-space:nowrap}
-.directory-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.data-panel,.module-panel{padding:18px;color:#afc0d2;font-size:11px;line-height:1.65}.module-panel b{color:#f3c66f}.module-panel p{max-width:850px}.module-status{display:inline-block;padding:6px 9px;border:1px solid #6b5428;background:#302719;border-radius:6px;color:#f2c66c;font-size:9px}.empty-state{padding:24px;text-align:center;color:#879db5;font-size:11px;line-height:1.5}.toast{position:fixed;right:22px;bottom:22px;background:#123a3a;border:1px solid #287e75;border-radius:8px;padding:12px 15px;color:#e6fffa;font-size:11px;opacity:0;transform:translateY(7px);transition:.2s;z-index:80;pointer-events:none}.toast.show{opacity:1;transform:none}.login-gate{position:fixed;inset:0;background:#06101ef2;display:grid;place-items:center;z-index:100;padding:20px}.login-gate[hidden]{display:none}.login-card{width:min(390px,100%);padding:29px;background:#0d1e30;border:1px solid #25415e;border-radius:14px}.brand-mark{width:40px;height:40px;display:grid;place-items:center;border:1px solid #258fbe;color:#54caff;border-radius:50%;font-size:24px}.eyebrow{font-size:9px;letter-spacing:1.4px;color:#43baf0;margin:16px 0 8px}.login-card h1{font-size:23px;margin:0 0 7px}.muted{color:#8ca2bb}.login-card label{display:block;margin-top:14px;color:#a7b9cc;font-size:11px}.login-card input{display:block;width:100%;margin-top:6px;padding:11px;border:1px solid #29435d;border-radius:7px;background:#081727;color:white}.btn{padding:10px 13px;border:1px solid #277db7;border-radius:7px;background:#1269a8;color:#fff}.wide{width:100%;margin-top:18px}.error-text{color:#ff8190;font-size:10px;min-height:13px}
-.alert-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.mini-action{border:1px solid #31516d;background:#102a42;color:#cce4f7;border-radius:5px;padding:5px 8px;font-size:9px}.table-scroll{width:100%;overflow:auto}.data-table{border-collapse:collapse;width:100%;font-size:10px}.data-table tr{border-bottom:1px solid #1b3048}.data-table th,.data-table td{text-align:left;padding:9px 10px;vertical-align:top}.data-table th{width:35%;font-weight:600;color:#8da4bd}.data-table td{color:#d0ddeb;overflow-wrap:anywhere}.module-record{padding:12px 0;border-bottom:1px solid #20364c}.module-record>b{display:block;color:#e4eff9;margin-bottom:8px}.inline-field{display:inline-flex;align-items:center;gap:8px;color:#9eb2c9;font-size:10px;margin:9px 0}.inline-field select{background:#0d1e31;border:1px solid #29435d;color:#d8e5f3;padding:8px;border-radius:6px}.module-result{margin:11px 0;max-height:300px;overflow:auto}.btn.primary{border:1px solid #2687ce;background:#1269a8;color:white;border-radius:6px;padding:8px 12px;font-size:10px}.data-panel h3{font-size:12px;color:#d7e5f4;margin:0 0 11px}.pond-directory-card{cursor:pointer}
-@media(min-width:1500px){.main-content{padding-left:34px;padding-right:34px}.chart-stage{height:320px}}@media(max-width:1050px){.sidebar{width:76px;padding:15px 7px}.brand{justify-content:center;padding:0 0 14px}.brand>span:last-child{display:none}.nav-item{justify-content:center;padding:0;font-size:0}.nav-item>span{font-size:17px}.sidebar-bottom{justify-content:center}.sidebar-bottom span:nth-child(2),.sidebar-bottom button{display:none}.main-content{margin-left:76px}.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.dashboard-bottom{grid-template-columns:1fr}.directory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:650px){.main-content{padding:0 12px 20px}.topbar{height:auto;min-height:58px;flex-wrap:wrap;padding:10px 0;gap:9px}.top-brand-mobile{display:block;font-weight:800;font-size:12px;color:#d8e9f8}.search-wrap{order:3;width:100%}.top-actions{gap:8px}.user-label{display:none}.page-section{padding-top:17px}.page-heading{align-items:flex-start;flex-direction:column}.page-heading h1{font-size:22px}.heading-actions{width:100%}.heading-actions select{flex:1;min-width:0}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpi-card{padding:11px}.kpi-card>div>b,.kpi-card>b{font-size:21px}.kpi-grid .kpi-card:last-child{grid-column:1/-1}.chart-stage{height:220px}.pond-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.directory-grid{grid-template-columns:1fr}.analytics-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.safety-note{align-items:flex-start;flex-direction:column}}
-</style></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#060e17">
+  <title>AQUA OS — Smart Aquaculture Farm Operations Overview</title>
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=20261030-final">
+</head>
 <body>
-<div id="loginGate" class="login-gate" hidden><form id="loginForm" class="login-card"><div class="brand-mark">◈</div><p class="eyebrow">AQUA OS 2027</p><h1>Welcome back</h1><p class="muted">Sign in to manage your farm.</p><label>Username<input id="loginUsername" autocomplete="username" required></label><label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label><button class="btn primary wide" type="submit">Sign in</button><p id="loginError" class="error-text" role="alert"></p></form></div>
-<div class="app-shell"><aside class="sidebar"><a class="brand" href="#dashboard"><span class="brand-icon">◉</span><span><b>AQUA OS <em>2027</em></b></span></a><nav class="main-nav" aria-label="Main navigation">
-<a class="nav-item active" href="#dashboard" data-section="dashboard"><span>⌂</span>Dashboard</a><a class="nav-item" href="#ponds" data-section="ponds"><span>◉</span>Ponds</a><a class="nav-item" href="#analytics" data-section="analytics"><span>⌁</span>Analytics</a><a class="nav-item" href="#automation" data-section="automation"><span>⟳</span>Automation</a><a class="nav-item" href="#alerts" data-section="alerts"><span>♧</span>Alerts</a><a class="nav-item" href="#feeding" data-section="feeding"><span>♨</span>Feed Management</a><a class="nav-item" href="#water" data-section="water"><span>♢</span>Water Management</a><a class="nav-item" href="#health" data-section="health"><span>♡</span>Health &amp; Disease</a><a class="nav-item" href="#reports" data-section="reports"><span>▤</span>Reports</a><a class="nav-item" href="#users" data-section="users"><span>♙</span>Users</a><a class="nav-item" href="#settings" data-section="settings"><span>⚙</span>Settings</a>
-</nav><div class="sidebar-bottom"><i id="connectionDot" class="connection-dot"></i><span id="connectionText">Connecting</span><button id="logoutButton" title="Sign out">↪</button></div></aside>
-<main class="main-content"><header class="topbar"><div class="top-brand-mobile">◉ AQUA OS 2027</div><label class="search-wrap"><span>⌕</span><input id="globalSearch" placeholder="Search ponds, alerts, reports…" aria-label="Search ponds, alerts and reports"></label><div class="top-actions"><span class="system-badge" id="systemBadge"><i></i>Connecting</span><button class="notification-button" id="notificationButton" aria-label="Notifications">♧<b id="notificationCount">0</b></button><button class="profile-button" id="profileButton">U</button><div class="user-label"><b id="userName">Farm Owner</b><small id="farmName">Aqua OS Farm</small></div></div></header>
-<section id="dashboard" class="page-section active"><div class="page-heading"><div><h1>Farm Overview</h1><p>Real-time monitoring and AI-driven insights for better yield</p></div><div class="heading-actions"><select id="dateRange" aria-label="Date range"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30">Last 30 days</option></select><select id="pondFilter" aria-label="Pond filter"><option value="all">All Ponds</option></select><button class="refresh-button" id="refreshButton" title="Refresh data">↻</button></div></div>
-<div class="kpi-grid"><article class="kpi-card"><small>Total Ponds</small><div><b id="kpiPonds">—</b><span class="kpi-icon">◉</span></div><p id="kpiPondSub">Registered ponds</p></article><article class="kpi-card"><small>Avg DO</small><div><b id="kpiDo">—</b><span class="unit">mg/L</span></div><p class="positive" id="kpiDoSub">Fresh sensor readings only</p></article><article class="kpi-card"><small>Avg Temp</small><div><b id="kpiTemp">—</b><span class="unit">°C</span></div><p class="positive" id="kpiTempSub">Fresh sensor readings only</p></article><article class="kpi-card"><small>Survival Rate</small><div><b id="kpiSurvival">—</b><span class="unit">%</span></div><p id="kpiSurvivalSub">Active batch records</p></article><article class="kpi-card"><small>Est. Harvest</small><div><b id="kpiHarvest">—</b><span class="unit" id="kpiHarvestUnit"></span></div><p id="kpiHarvestSub">No forecast loaded</p></article></div>
-<section class="panel trend-panel"><div class="panel-title"><div><h2>Water Parameters Trend <span id="trendScope">(All Ponds Average)</span></h2><p>Historical telemetry · only valid recorded readings</p></div><span class="live-chip"><i></i> Live</span></div><div class="metric-tabs" role="group" aria-label="Water parameter"><button class="metric-tab active" data-metric="DISSOLVED_OXYGEN">DO</button><button class="metric-tab" data-metric="TEMPERATURE">Temperature</button><button class="metric-tab" data-metric="PH">pH</button><button class="metric-tab" data-metric="SALINITY">Salinity</button></div><div class="chart-stage"><canvas id="trendChart" aria-label="Historical water parameter trend chart"></canvas><div id="chartEmpty" class="chart-empty">Waiting for historical telemetry…</div><div class="chart-tooltip" id="chartTooltip"></div></div><div class="chart-footer"><span id="chartMetricLabel">Dissolved oxygen · mg/L</span><span id="chartRangeLabel">Last 7 days</span></div></section>
-<div class="dashboard-bottom"><section class="panel pond-summary"><div class="panel-title"><div><h2>Pond status</h2><p>Latest evaluated condition by pond</p></div><a href="#ponds" data-section="ponds">View all →</a></div><div id="pondCards" class="pond-cards"><div class="empty-state">Loading registered ponds…</div></div></section><section class="panel alert-summary"><div class="panel-title"><div><h2>Recent Alerts</h2><p>Safety evaluation and telemetry status</p></div><a href="#alerts" data-section="alerts">View all →</a></div><div id="alertRows"><div class="empty-state">Loading alerts…</div></div></section></div>
-<section id="pondDetailPanel" class="panel data-panel pond-detail-panel" hidden><div class="panel-title"><div><h2 id="pondDetailTitle">Pond details</h2><p>Live pond monitoring record from the API</p></div><button class="refresh-button" id="closePondDetail" aria-label="Close pond details">×</button></div><div id="pondDetailContent" class="module-result">Select a pond to load its detail record.</div></section><div class="safety-note"><b>Safety notice</b><span>AI insights are advisory. Physical equipment control remains subject to commissioned hardware, verified feedback, safety interlocks and operator authorization.</span></div>
-</section>
-<section id="ponds" class="page-section"><div class="page-heading"><div><h1>Ponds</h1><p>All registered ponds and latest sensor condition.</p></div></div><div id="pondDirectory" class="directory-grid"></div></section>
-<section id="analytics" class="page-section"><div class="page-heading"><div><h1>Analytics</h1><p>Farm-wide recorded telemetry and production indicators.</p></div></div><div class="kpi-grid analytics-kpis"><article class="kpi-card"><small>Estimated Biomass</small><b id="analyticsBiomass">—</b></article><article class="kpi-card"><small>Average ABW</small><b id="analyticsAbw">—</b></article><article class="kpi-card"><small>Farm FCR</small><b id="analyticsFcr">—</b></article><article class="kpi-card"><small>Active Batches</small><b id="analyticsBatches">—</b></article></div><div class="panel data-panel" id="analyticsNotice">Production metrics are sourced from recorded batch and sampling data.</div></section>
-<section id="alerts" class="page-section"><div class="page-heading"><div><h1>Alerts</h1><p>Current pond safety findings and telemetry freshness issues.</p></div></div><div class="panel data-panel" id="alertsDirectory"></div></section>
-<section id="automation" class="page-section"><div class="page-heading"><div><h1>Automation</h1><p>Automation readiness and safe operating boundary.</p></div></div><div class="panel module-panel"><b>Hardware commissioning required</b><p>Automation remains in advisory / dry-run mode until edge hardware, actuator feedback, emergency stop and interlocks are verified. No physical command is issued from this dashboard.</p><span class="module-status">PHYSICAL CONTROL NOT ENABLED</span></div></section>
-<section id="feeding" class="page-section"><div class="page-heading"><div><h1>Feed Management</h1><p>Recorded daily feed plans and feed inventory balances.</p></div></div><div class="panel data-panel"><h3>Daily Feed Plan</h3><div id="feedingContent">Loading feed planning data…</div></div><div class="panel data-panel" style="margin-top:12px"><h3>Feed Inventory</h3><div id="inventoryContent">Loading inventory data…</div></div></section>
-<section id="water" class="page-section"><div class="page-heading"><div><h1>Water Management</h1><p>Water monitoring and infrastructure status.</p></div></div><div class="panel data-panel" id="waterContent">Water management records load with farm operations.</div></section>
-<section id="health" class="page-section"><div class="page-heading"><div><h1>Health &amp; Disease</h1><p>Recorded health events and biosecurity observations.</p></div></div><div class="panel data-panel" id="healthContent">Health records are available through the farm health module. No diagnosis is inferred from missing data.</div></section>
-<section id="reports" class="page-section"><div class="page-heading"><div><h1>Reports</h1><p>Export the currently loaded, API-reported pond telemetry snapshot.</p></div><button class="btn primary" id="exportReport">Export telemetry CSV</button></div><div class="panel data-panel"><p>CSV export includes latest pond telemetry fields returned by the API, with source quality and timestamps. It does not fabricate missing readings.</p><div id="reportStatus">Refresh farm data before exporting for the latest snapshot.</div></div></section>
-<section id="users" class="page-section"><div class="page-heading"><div><h1>Users</h1><p>Current authenticated session.</p></div></div><div class="panel data-panel" id="userContent">Loading account information…</div></section>
-<section id="settings" class="page-section"><div class="page-heading"><div><h1>Settings</h1><p>Farm workspace and connection configuration.</p></div></div><div class="panel data-panel" id="settingsContent">Loading farm configuration…</div></section>
-</main></div><div id="toast" class="toast" role="status" aria-live="polite"></div><script src="/static/js/dashboard.js?v=20261030-3"></script></body></html>
+
+  <!-- Login Gate Modal -->
+  <div id="loginGate" class="modal-backdrop" hidden>
+    <div class="login-card-box">
+      <div class="login-brand-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+        </svg>
+      </div>
+      <p class="login-eyebrow">AQUA OS 2027</p>
+      <h1 class="login-heading">Welcome Back</h1>
+      <p class="login-subtext">Sign in to access your farm dashboard &amp; automation system.</p>
+      <form id="loginForm">
+        <div class="login-form-group">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" class="login-input-field" autocomplete="username" required>
+        </div>
+        <div class="login-form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="login-input-field" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="login-submit-btn">Sign In to Dashboard</button>
+        <p id="loginError" class="login-error-text" role="alert"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pond Detail Modal Dialog -->
+  <div id="pondDetailModal" class="modal-backdrop" hidden>
+    <div class="detail-modal-box">
+      <div class="detail-modal-header">
+        <div class="panel-title-text" id="detailModalTitle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          <span id="pondModalHeaderName">Pond Details</span>
+        </div>
+        <button id="closeDetailModal" class="close-btn" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="detail-modal-body" id="detailModalBody">
+        <p>Loading live telemetry and pond details...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <!-- Fixed Left Sidebar -->
+    <aside class="sidebar" aria-label="Sidebar Navigation">
+      <div class="sidebar-header">
+        <a href="#dashboard" class="brand-logo-link">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+            </svg>
+          </div>
+          <div class="brand-text-block">
+            <span class="brand-name">AQUA OS</span>
+            <span class="brand-tagline">Smart Aquaculture</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-link active" data-section="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <span class="nav-link-text">Overview</span>
+        </a>
+
+        <a href="#ponds" class="nav-link" data-section="ponds">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+          <span class="nav-link-text">Ponds</span>
+        </a>
+
+        <a href="#live-monitoring" class="nav-link" data-section="live-monitoring">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          <span class="nav-link-text">Live Monitoring</span>
+        </a>
+
+        <a href="#operations" class="nav-link" data-section="operations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span class="nav-link-text">Operations</span>
+        </a>
+
+        <a href="#feeding" class="nav-link" data-section="feeding">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+            <line x1="6" y1="1" x2="6" y2="4"/>
+            <line x1="10" y1="1" x2="10" y2="4"/>
+            <line x1="14" y1="1" x2="14" y2="4"/>
+          </svg>
+          <span class="nav-link-text">Feeding</span>
+        </a>
+
+        <a href="#water" class="nav-link" data-section="water">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
+          <span class="nav-link-text">Water Management</span>
+        </a>
+
+        <a href="#equipment" class="nav-link" data-section="equipment">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span class="nav-link-text">Equipment</span>
+        </a>
+
+        <a href="#automation" class="nav-link" data-section="automation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span class="nav-link-text">AI Advisor</span>
+        </a>
+
+        <a href="#analytics" class="nav-link" data-section="analytics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span class="nav-link-text">Grading &amp; Production</span>
+        </a>
+
+        <a href="#health" class="nav-link" data-section="health">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          <span class="nav-link-text">Health &amp; Biosecurity</span>
+        </a>
+
+        <a href="#alerts" class="nav-link" data-section="alerts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="nav-link-text">Alerts</span>
+          <span class="nav-badge" id="navAlertCount">2</span>
+        </a>
+
+        <a href="#reports" class="nav-link" data-section="reports">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span class="nav-link-text">Reports</span>
+        </a>
+
+        <a href="#settings" class="nav-link" data-section="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span class="nav-link-text">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Weather & User Profile -->
+      <div class="sidebar-footer">
+        <div class="weather-widget">
+          <div class="weather-main">
+            <svg class="weather-icon-sun" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <div class="weather-temp-cond">
+              <span class="weather-temp">28°C</span>
+              <span class="weather-condition">Partly Cloudy</span>
+            </div>
+          </div>
+          <div class="weather-details">
+            <span class="weather-detail-item">Wind 12 km/h</span>
+            <span class="weather-detail-item">Humidity 68%</span>
+            <span class="weather-detail-item">Rain 0 mm</span>
+          </div>
+        </div>
+
+        <div class="sidebar-user-pill" id="sidebarUserPill">
+          <div class="user-avatar-circle" id="userAvatarLetter">G</div>
+          <div class="user-info-text">
+            <div class="user-name-title" id="sidebarUserName">Gullapalli Farm</div>
+            <div class="user-role-subtitle" id="sidebarUserRole">Administrator</div>
+          </div>
+          <svg class="user-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Header Navigation Bar -->
+      <header class="topbar">
+        <div class="search-box-container">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="globalSearchInput" class="search-input" placeholder="Search ponds, sensors, alerts, reports..." aria-label="Search">
+        </div>
+
+        <div class="topbar-actions">
+          <!-- Critical Alerts Badge -->
+          <div class="header-badge header-badge-critical" id="criticalBadge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z"/>
+            </svg>
+            <span id="criticalCountText">2 Critical Alerts</span>
+          </div>
+
+          <!-- Warnings Badge -->
+          <div class="header-badge header-badge-warning" id="warningBadge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+            </svg>
+            <span id="warningCountText">3 Warnings</span>
+          </div>
+
+          <!-- System Readiness Badge -->
+          <div class="header-badge header-badge-online" id="systemBadge">
+            <i class="status-dot-pulse"></i>
+            <span class="sr-only">System readiness: </span>
+            <span id="systemStatusText">All Systems Online</span>
+          </div>
+
+          <!-- Date & Time -->
+          <div class="header-datetime" id="topDateTime">Thu, 30 Oct 2026, 14:32</div>
+
+          <!-- Notification Bell -->
+          <button class="header-icon-btn" id="notificationBtn" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="header-counter-dot" id="headerNotifBadge">5</span>
+          </button>
+
+          <!-- User Avatar -->
+          <button class="header-avatar-btn" id="headerAvatarBtn" title="Farm Owner Profile">G</button>
+        </div>
+      </header>
+
+      <!-- Main Overview Dashboard Section -->
+      <main id="dashboard" class="dashboard-page section-page active">
+        
+        <!-- ZONE 1: TOP HERO (AERIAL FARM VIEW) & RIGHT STACK (HEALTH, METRICS, ALERTS) -->
+        <section class="zone-top-grid">
+          
+          <!-- Left Column: Aerial Farm Overview -->
+          <article class="panel hero-farm-panel">
+            <header class="hero-header">
+              <div class="hero-title-group">
+                <div class="hero-badge-hexagon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </div>
+                <div class="hero-headings">
+                  <h1>Farm Overview</h1>
+                  <span class="sr-only">Farm Operations Overview</span>
+                  <p><span id="heroPondCount">20 Ponds</span> &bull; Real-time monitoring &bull; AI-powered management</p>
+                </div>
+              </div>
+
+              <div class="hero-controls">
+                <div class="view-btn-group">
+                  <button class="view-btn active" id="btn3DView">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                      <polyline points="2 17 12 22 22 17"/>
+                      <polyline points="2 12 12 17 22 12"/>
+                    </svg>
+                    <span>3D View</span>
+                  </button>
+                  <button class="view-btn" id="btnMapView">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                      <line x1="8" y1="2" x2="8" y2="18"/>
+                      <line x1="16" y1="6" x2="16" y2="22"/>
+                    </svg>
+                    <span>Map View</span>
+                  </button>
+                  <button class="view-btn" id="btnListView">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="8" y1="6" x2="21" y2="6"/>
+                      <line x1="8" y1="12" x2="21" y2="12"/>
+                      <line x1="8" y1="18" x2="21" y2="18"/>
+                      <line x1="3" y1="6" x2="3.01" y2="6"/>
+                      <line x1="3" y1="12" x2="3.01" y2="12"/>
+                      <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>List View</span>
+                  </button>
+                </div>
+                <button class="fullscreen-btn" id="btnFullscreen" title="Toggle Fullscreen">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                  </svg>
+                </button>
+              </div>
+            </header>
+
+            <!-- Aerial Farm Display Area -->
+            <div class="aerial-viewport" id="aerialViewport" style="background-image: url('/static/assets/target_hero_viewport.jpg');">
+              <!-- Floating Pond Interactive Hotspots -->
+              <div class="pond-overlay-container" id="pondOverlayContainer">
+                <div class="pond-hotspot" style="left: 10%; top: 32%; width: 14%; height: 13%;" data-pond-id="pond-01" title="Click to open Pond 1 details"></div>
+                <div class="pond-hotspot" style="left: 26%; top: 20%; width: 14%; height: 13%;" data-pond-id="pond-02" title="Click to open Pond 2 details"></div>
+                <div class="pond-hotspot" style="left: 42%; top: 21%; width: 14%; height: 13%;" data-pond-id="pond-03" title="Click to open Pond 3 details"></div>
+                <div class="pond-hotspot" style="left: 61%; top: 33%; width: 14%; height: 13%;" data-pond-id="pond-04" title="Click to open Pond 4 details"></div>
+                <div class="pond-hotspot" style="left: 7%; top: 52%; width: 14%; height: 13%;" data-pond-id="pond-05" title="Click to open Pond 5 details"></div>
+                <div class="pond-hotspot" style="left: 28%; top: 76%; width: 14%; height: 13%;" data-pond-id="pond-06" title="Click to open Pond 6 details"></div>
+                <div class="pond-hotspot" style="left: 42%; top: 56%; width: 14%; height: 13%;" data-pond-id="pond-07" title="Click to open Pond 7 details"></div>
+                <div class="pond-hotspot" style="left: 56%; top: 76%; width: 14%; height: 13%;" data-pond-id="pond-08" title="Click to open Pond 8 details"></div>
+              </div>
+
+              <!-- List View alternative (toggled when List View is clicked) -->
+              <div class="pond-list-view-container" id="pondListContainer"></div>
+            </div>
+          </article>
+
+          <!-- Right Column: Farm Health, Key Parameters, Live Alerts -->
+          <div class="right-stack-col">
+            
+            <!-- Farm Health -->
+            <article class="panel farm-health-card" id="farmHealthCard">
+              <h2 class="panel-title-text">Farm Health</h2>
+              <div class="health-flex-layout">
+                <div class="donut-gauge-wrapper">
+                  <svg viewBox="0 0 36 36">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#162c42" stroke-width="3.6"/>
+                    <path id="donutProgressArc" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" stroke-width="3.6" stroke-dasharray="80, 100" stroke-linecap="round"/>
+                  </svg>
+                  <div class="donut-gauge-center">
+                    <span class="donut-percent-num" id="donutHealthPct">80%</span>
+                    <span class="donut-label-text">Healthy</span>
+                  </div>
+                </div>
+                <div class="health-text-summary">
+                  <div class="health-main-status">Healthy</div>
+                  <p class="health-status-desc" id="healthPondsNormal">16 of 20 ponds in normal range</p>
+                  <div class="health-legend-grid">
+                    <span class="legend-item healthy">&uarr; <b id="healthCntHealthy">16</b> Healthy</span>
+                    <span class="legend-item warning">&rarr; <b id="healthCntWarning">3</b> Warning</span>
+                    <span class="legend-item critical">&and; <b id="healthCntCritical">1</b> Critical</span>
+                    <span class="legend-item offline">&bull; <b id="healthCntOffline">0</b> Offline</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- Key Parameters (All Ponds Avg) -->
+            <article class="panel key-params-card" id="keyParamsCard">
+              <h2 class="panel-title-text">Key Parameters (All Ponds Avg)</h2>
+              <div class="key-params-grid">
+                <!-- DO -->
+                <div class="param-mini-card">
+                  <span class="param-label">DO</span>
+                  <div class="param-val-row">
+                    <b class="param-number" id="avgParamDO">5.6</b>
+                    <span class="param-unit">mg/L</span>
+                  </div>
+                  <canvas class="param-sparkline-canvas" id="sparklineDO"></canvas>
+                  <span class="param-range-bounds">4.2 &ndash; 7.8</span>
+                </div>
+                <!-- Temp -->
+                <div class="param-mini-card">
+                  <span class="param-label">Temperature</span>
+                  <div class="param-val-row">
+                    <b class="param-number" id="avgParamTemp">28.4</b>
+                    <span class="param-unit">&deg;C</span>
+                  </div>
+                  <canvas class="param-sparkline-canvas" id="sparklineTemp"></canvas>
+                  <span class="param-range-bounds">26.1 &ndash; 31.2</span>
+                </div>
+                <!-- pH -->
+                <div class="param-mini-card">
+                  <span class="param-label">pH</span>
+                  <div class="param-val-row">
+                    <b class="param-number" id="avgParamPH">7.6</b>
+                    <span class="param-unit"></span>
+                  </div>
+                  <canvas class="param-sparkline-canvas" id="sparklinePH"></canvas>
+                  <span class="param-range-bounds">7.1 &ndash; 8.3</span>
+                </div>
+                <!-- Salinity -->
+                <div class="param-mini-card">
+                  <span class="param-label">Salinity</span>
+                  <div class="param-val-row">
+                    <b class="param-number" id="avgParamSal">32</b>
+                    <span class="param-unit">ppt</span>
+                  </div>
+                  <canvas class="param-sparkline-canvas" id="sparklineSal"></canvas>
+                  <span class="param-range-bounds">28 &ndash; 38</span>
+                </div>
+              </div>
+            </article>
+
+            <!-- Live Alerts -->
+            <article class="panel live-alerts-card" id="liveAlertsCard">
+              <div class="panel-header" style="padding: 0 0 8px; border-bottom: 1px solid var(--border-subtle);">
+                <h2 class="panel-title-text">Live Alerts</h2>
+                <a href="#alerts" class="panel-link-action" data-section="alerts">View All &rarr;</a>
+              </div>
+              <div class="alerts-list-group" id="alertsListGroup">
+                <!-- Alert 1 -->
+                <div class="alert-row-item">
+                  <div class="alert-left-block">
+                    <svg class="alert-indicator-triangle" viewBox="0 0 24 24" fill="#ef4444">
+                      <path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z"/>
+                    </svg>
+                    <span class="alert-pond-pill">Pond 4</span>
+                    <span class="alert-msg-text">Dissolved Oxygen below 3.0 mg/L</span>
+                  </div>
+                  <div class="alert-right-block">
+                    <span class="alert-time-age">2 min ago</span>
+                    <button class="alert-action-btn" data-pond-id="pond-04">Take Action</button>
+                  </div>
+                </div>
+                <!-- Alert 2 -->
+                <div class="alert-row-item">
+                  <div class="alert-left-block">
+                    <svg class="alert-indicator-triangle" viewBox="0 0 24 24" fill="#f59e0b">
+                      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                    </svg>
+                    <span class="alert-pond-pill">Pond 3</span>
+                    <span class="alert-msg-text">Temperature above threshold (29.5°C)</span>
+                  </div>
+                  <div class="alert-right-block">
+                    <span class="alert-time-age">8 min ago</span>
+                    <button class="alert-action-btn" data-pond-id="pond-03">Take Action</button>
+                  </div>
+                </div>
+                <!-- Alert 3 -->
+                <div class="alert-row-item">
+                  <div class="alert-left-block">
+                    <svg class="alert-indicator-triangle" viewBox="0 0 24 24" fill="#f59e0b">
+                      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                    </svg>
+                    <span class="alert-pond-pill">Pond 12</span>
+                    <span class="alert-msg-text">pH fluctuation detected</span>
+                  </div>
+                  <div class="alert-right-block">
+                    <span class="alert-time-age">15 min ago</span>
+                    <button class="alert-action-btn" data-pond-id="pond-12">View</button>
+                  </div>
+                </div>
+                <!-- Alert 4 -->
+                <div class="alert-row-item">
+                  <div class="alert-left-block">
+                    <svg class="alert-indicator-triangle" viewBox="0 0 24 24" fill="#3b82f6">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none" stroke-width="2"/>
+                      <line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
+                      <line x1="12" y1="8" x2="12.01" y2="8" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span class="alert-pond-pill">Pond 8</span>
+                    <span class="alert-msg-text">Equipment in maintenance</span>
+                  </div>
+                  <div class="alert-right-block">
+                    <span class="alert-time-age">1 hour ago</span>
+                    <button class="alert-action-btn" data-pond-id="pond-08">View</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+          </div>
+        </section>
+
+        <!-- ZONE 2: MIDDLE ROW (LIVE SENSOR TRENDS, AI FARM ADVISOR, OPERATIONS TODAY) -->
+        <section class="zone-middle-grid">
+          
+          <!-- Middle 1: Live Sensor Trends -->
+          <article class="panel sensor-trends-panel" id="sensorTrendsPanel">
+            <div class="panel-header" style="padding: 0 0 8px;">
+              <h2 class="panel-title-text">Live Sensor Trends</h2>
+              <div class="trends-header-controls">
+                <div class="time-range-pills" id="timeRangePills">
+                  <button class="time-pill-btn" data-range="1h">1H</button>
+                  <button class="time-pill-btn" data-range="6h">6H</button>
+                  <button class="time-pill-btn active" data-range="24h">24H</button>
+                  <button class="time-pill-btn" data-range="7d">7D</button>
+                </div>
+                <select class="pond-select-dropdown" id="trendPondSelect" aria-label="Select pond for trends">
+                  <option value="pond-01">Pond 1</option>
+                  <option value="pond-02">Pond 2</option>
+                  <option value="pond-03">Pond 3</option>
+                  <option value="pond-04">Pond 4</option>
+                  <option value="all">All Ponds</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Metric Selector Tabs -->
+            <div class="metric-tabs-row" id="metricTabsRow">
+              <button class="metric-tab-pill active" data-metric="DISSOLVED_OXYGEN">Dissolved Oxygen</button>
+              <button class="metric-tab-pill" data-metric="TEMPERATURE">Temperature</button>
+              <button class="metric-tab-pill" data-metric="PH">pH</button>
+              <button class="metric-tab-pill" data-metric="SALINITY">Salinity</button>
+              <button class="metric-tab-pill" data-metric="TURBIDITY">Turbidity</button>
+            </div>
+
+            <!-- Canvas Spline Chart Viewport -->
+            <div class="chart-viewport-box">
+              <canvas id="trendChartCanvas" aria-label="Live Sensor Trend Spline Chart"></canvas>
+              <div class="chart-empty-state" id="trendChartEmpty" hidden>Waiting for sensor telemetry...</div>
+              <div class="chart-interactive-tooltip" id="trendTooltip"></div>
+            </div>
+
+            <!-- Legend Row -->
+            <div class="chart-legend-row">
+              <span class="legend-line-item"><span class="dash-line-upper"></span> Upper Threshold</span>
+              <span class="legend-line-item"><span class="dash-line-lower"></span> Lower Threshold</span>
+              <span class="legend-line-item"><span class="dot-line-metric"></span> <span id="trendLegendMetricLabel">DO (mg/L)</span></span>
+            </div>
+          </article>
+
+          <!-- Middle 2: AI Farm Advisor -->
+          <article class="panel ai-advisor-panel" id="aiAdvisorPanel">
+            <div class="panel-header" style="padding: 0 0 8px;">
+              <h2 class="panel-title-text">
+                AI Farm Advisor
+                <span class="beta-tag">Beta</span>
+              </h2>
+              <a href="#automation" class="panel-link-action" data-section="automation">View Details &rarr;</a>
+            </div>
+
+            <!-- Status Banner -->
+            <div class="advisor-status-box">
+              <svg class="advisor-shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <polyline points="9 12 11 14 15 10"/>
+              </svg>
+              <div>
+                <div class="advisor-status-title">Farm Status: Good</div>
+                <div class="advisor-status-desc">Overall farm conditions are stable. 2 action items identified.</div>
+              </div>
+            </div>
+
+            <!-- Recommendation Card -->
+            <div class="recommendation-card">
+              <div class="rec-header-row">
+                <div class="rec-num-badge">
+                  <span class="num-circle">1</span>
+                  <span>Recommendation</span>
+                </div>
+                <span class="rec-priority-pill">Medium Priority</span>
+              </div>
+              <p class="rec-body-text">
+                Pond 3 temperature is 1.5°C above normal range. Consider increasing aeration and monitor closely.
+              </p>
+              <div class="rec-actions-row">
+                <button class="btn-primary-blue" id="btnApplyPlan">Apply to Plan</button>
+                <button class="btn-outline-dark" id="btnViewAnalysis">View Analysis</button>
+              </div>
+            </div>
+
+            <!-- Quick Actions Bar -->
+            <div class="quick-actions-bar">
+              <button class="quick-action-pill" data-section="feeding">Feeding Plan</button>
+              <button class="quick-action-pill" data-section="water">Aeration Plan</button>
+              <button class="quick-action-pill" data-section="water">Water Exchange</button>
+              <button class="quick-action-pill" data-section="health">Health Check</button>
+            </div>
+          </article>
+
+          <!-- Middle 3: Operations Today -->
+          <article class="panel operations-panel" id="operationsPanel">
+            <div class="panel-header" style="padding: 0 0 8px;">
+              <h2 class="panel-title-text">Operations Today</h2>
+              <a href="#operations" class="panel-link-action" data-section="operations">View Schedule &rarr;</a>
+            </div>
+
+            <div class="schedule-gantt-wrapper">
+              <div class="gantt-time-header">
+                <span>06:00</span>
+                <span>08:00</span>
+                <span>12:00</span>
+                <span>16:00</span>
+                <span>20:00</span>
+              </div>
+
+              <!-- Feeding -->
+              <div class="gantt-task-row">
+                <div class="task-label-col">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                  </svg>
+                  <span>Feeding</span>
+                </div>
+                <div class="task-timeline-track">
+                  <div class="gantt-block gantt-completed" style="left: 0%; width: 22%;">Completed</div>
+                  <div class="gantt-block gantt-progress" style="left: 38%; width: 20%;">In Progress</div>
+                  <div class="gantt-block gantt-scheduled" style="left: 68%; width: 18%;">Scheduled</div>
+                </div>
+              </div>
+
+              <!-- Aeration -->
+              <div class="gantt-task-row">
+                <div class="task-label-col">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                  </svg>
+                  <span>Aeration</span>
+                </div>
+                <div class="task-timeline-track">
+                  <div class="gantt-block gantt-automode" style="left: 0%; width: 90%;">Auto Mode</div>
+                </div>
+              </div>
+
+              <!-- Water Exchange -->
+              <div class="gantt-task-row">
+                <div class="task-label-col">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  </svg>
+                  <span>Water Exchange</span>
+                </div>
+                <div class="task-timeline-track">
+                  <div class="gantt-block gantt-scheduled" style="left: 45%; width: 24%;">Not Scheduled</div>
+                </div>
+              </div>
+
+              <!-- Health Check -->
+              <div class="gantt-task-row">
+                <div class="task-label-col">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                  </svg>
+                  <span>Health Check</span>
+                </div>
+                <div class="task-timeline-track">
+                  <div class="gantt-block gantt-gold" style="left: 15%; width: 22%;">Completed</div>
+                  <div class="gantt-block gantt-scheduled" style="left: 75%; width: 20%;">Scheduled</div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+        </section>
+
+        <!-- ZONE 3: BOTTOM ROW (SHRIMP GROWTH, SIZE GRADING, EQUIPMENT STATUS, RECENT CAMERA FEED) -->
+        <section class="zone-bottom-grid">
+          
+          <!-- Bottom 1: Shrimp Growth & Production -->
+          <article class="panel shrimp-card" id="shrimpGrowthCard">
+            <h2 class="panel-title-text">
+              Shrimp Growth &amp; Production
+            </h2>
+            <div class="panel-title-subtitle">Pond 1 (Vannamei)</div>
+            <div class="shrimp-flex-content">
+              <div class="shrimp-image-wrapper">
+                <img src="/static/assets/shrimp_clean.png" alt="Litopenaeus vannamei shrimp illustration" id="shrimpGraphicImg">
+              </div>
+              <div class="shrimp-stats-grid">
+                <div class="shrimp-stat-box">
+                  <small>Average Weight</small>
+                  <b>18.4 g</b>
+                  <span class="growth-badge-up">&uarr; 12% (7 days)</span>
+                </div>
+                <div class="shrimp-stat-box">
+                  <small>Growth Rate</small>
+                  <b>0.68 g/day</b>
+                </div>
+                <div class="shrimp-stat-box">
+                  <small>FCR (Est.)</small>
+                  <b>1.4</b>
+                </div>
+                <div class="shrimp-stat-box">
+                  <small>Survival Rate</small>
+                  <b>92%</b>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Bottom 2: Size Grading (Latest) -->
+          <article class="panel size-grading-card" id="sizeGradingCard">
+            <h2 class="panel-title-text">Size Grading (Latest)</h2>
+            <div class="panel-title-subtitle">Pond 1 &bull; 30 Oct 2026</div>
+            <div class="grading-chart-box">
+              <!-- Bar 1 -->
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">18%</span>
+                <div class="grading-bar-fill bar-cyan" style="height: 45%;"></div>
+                <span class="grading-size-label">20-30</span>
+              </div>
+              <!-- Bar 2 (highlighted) -->
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">32%</span>
+                <div class="grading-bar-fill bar-blue-highlight" style="height: 80%;"></div>
+                <span class="grading-size-label">30-40</span>
+              </div>
+              <!-- Bar 3 -->
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">28%</span>
+                <div class="grading-bar-fill bar-cyan" style="height: 70%;"></div>
+                <span class="grading-size-label">40-50</span>
+              </div>
+              <!-- Bar 4 -->
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">18%</span>
+                <div class="grading-bar-fill bar-amber" style="height: 45%;"></div>
+                <span class="grading-size-label">50-60</span>
+              </div>
+              <!-- Bar 5 -->
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">4%</span>
+                <div class="grading-bar-fill bar-red" style="height: 12%;"></div>
+                <span class="grading-size-label">60-70</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Bottom 3: Equipment Status -->
+          <article class="panel equipment-card" id="equipmentStatusCard">
+            <div class="panel-header" style="padding: 0 0 8px;">
+              <h2 class="panel-title-text">Equipment Status</h2>
+              <a href="#equipment" class="panel-link-action" data-section="equipment">View All &rarr;</a>
+            </div>
+            <div class="equipment-list-group">
+              <!-- Aerators -->
+              <div class="equipment-row-item">
+                <div class="equip-left-info">
+                  <svg class="equip-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                  <span class="equip-name">Aerators</span>
+                </div>
+                <span class="equip-status-val">16 / 20 ON</span>
+                <label class="toggle-switch-wrapper">
+                  <input type="checkbox" checked aria-label="Toggle Aerators">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <!-- Feeders -->
+              <div class="equipment-row-item">
+                <div class="equip-left-info">
+                  <svg class="equip-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                  </svg>
+                  <span class="equip-name">Feeders</span>
+                </div>
+                <span class="equip-status-val">3 / 5 Active</span>
+                <label class="toggle-switch-wrapper">
+                  <input type="checkbox" checked aria-label="Toggle Feeders">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <!-- Inlet Pumps -->
+              <div class="equipment-row-item">
+                <div class="equip-left-info">
+                  <svg class="equip-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                  </svg>
+                  <span class="equip-name">Inlet Pumps</span>
+                </div>
+                <span class="equip-status-val">2 / 4 OFF</span>
+                <label class="toggle-switch-wrapper">
+                  <input type="checkbox" aria-label="Toggle Inlet Pumps">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <!-- Outlet Pumps -->
+              <div class="equipment-row-item">
+                <div class="equip-left-info">
+                  <svg class="equip-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  </svg>
+                  <span class="equip-name">Outlet Pumps</span>
+                </div>
+                <span class="equip-status-val">1 / 3 ON</span>
+                <label class="toggle-switch-wrapper">
+                  <input type="checkbox" checked aria-label="Toggle Outlet Pumps">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </article>
+
+          <!-- Bottom 4: Recent Camera Feed -->
+          <article class="panel camera-card" id="recentCameraCard">
+            <div class="panel-header" style="padding: 0 0 8px;">
+              <h2 class="panel-title-text">Recent Camera Feed</h2>
+              <a href="#live-monitoring" class="panel-link-action" data-section="live-monitoring">View All &rarr;</a>
+            </div>
+            <div class="camera-viewport-box" style="background-image: url('/static/assets/live_camera_feed.jpg');">
+              <div class="camera-live-indicator">
+                <span class="live-green-dot"></span>
+                <span>LIVE</span>
+              </div>
+              <div class="camera-nav-arrows">
+                <button aria-label="Previous Camera">&lsaquo;</button>
+                <button aria-label="Next Camera">&rsaquo;</button>
+              </div>
+              <div class="camera-overlay-footer">
+                <span>Pond 1 - North View</span>
+                <span>30 Oct 2026, 14:32:18</span>
+              </div>
+            </div>
+            <div class="camera-dots-row">
+              <span class="camera-dot-nav active"></span>
+              <span class="camera-dot-nav"></span>
+              <span class="camera-dot-nav"></span>
+            </div>
+          </article>
+
+        </section>
+
+      </main>
+
+      <!-- Secondary Navigation Section Pages (Ponds, Analytics, Automation, Alerts, Feeding, Water, Health, Reports, Settings) -->
+      
+      <!-- Ponds Page -->
+      <section id="ponds" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Registered Ponds &amp; Status</h1>
+            <p>Comprehensive telemetry overview across all farm production ponds.</p>
+          </div>
+        </div>
+        <div class="pond-list-view-container active" id="fullPondsGrid" style="height: auto; min-height: 400px;">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- Analytics Page -->
+      <section id="analytics" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Production Analytics &amp; Grading</h1>
+            <p>Biomass estimations, average body weight, and growth velocity metrics.</p>
+          </div>
+        </div>
+        <div class="panel" style="padding: 20px;">
+          <div id="analyticsContent">Loading farm analytics data...</div>
+        </div>
+      </section>
+
+      <!-- Automation / AI Advisor Page -->
+      <section id="automation" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Automation Safety Engine &amp; AI Advisor</h1>
+            <p>Physical interlock boundaries, advisory dry-run simulations, and equipment safety.</p>
+          </div>
+        </div>
+        <div class="panel" style="padding: 20px;">
+          <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--amber-status);">Advisory Dry-Run Boundary</h3>
+          <p style="color: var(--text-muted); margin-bottom: 14px; max-width: 800px;">
+            Aqua OS AI recommendations are purely advisory. Physical equipment controls remain safely locked until hardware interlocks, water chemistries, and on-site sensors are commissioned.
+          </p>
+          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px;">
+            <label for="dryRunPondSelect" style="color: var(--text-secondary);">Select Pond:</label>
+            <select id="dryRunPondSelect" class="pond-select-dropdown">
+              <option value="pond-01">Pond 1</option>
+              <option value="pond-02">Pond 2</option>
+              <option value="pond-03">Pond 3</option>
+              <option value="pond-04">Pond 4</option>
+            </select>
+            <button class="btn-primary-blue" id="btnRunDryRun">Run Advisory Dry-Run</button>
+          </div>
+          <div id="dryRunResultOutput" style="background: #081421; padding: 14px; border-radius: 6px; font-family: monospace; font-size: 11px;">Select a pond to test safe dry-run advisory.</div>
+        </div>
+      </section>
+
+      <!-- Alerts Page -->
+      <section id="alerts" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Active Farm Alerts</h1>
+            <p>Pond threshold breaches, sensor anomalies, and maintenance logs.</p>
+          </div>
+        </div>
+        <div class="panel" style="padding: 16px;">
+          <div id="fullAlertsContainer">Loading alerts...</div>
+        </div>
+      </section>
+
+      <!-- Feeding Page -->
+      <section id="feeding" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Feed Management</h1>
+            <p>Daily feeding programs, tray inspections, and feed inventory tracking.</p>
+          </div>
+        </div>
+        <div class="panel" style="padding: 16px;">
+          <div id="feedingModuleContent">Loading feeding management records...</div>
+        </div>
+      </section>
+
+      <!-- Water Management Page -->
+      <section id="water" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Water Management &amp; Monk Sluices</h1>
+            <p>Water depths, drainage locks, and bio-containment monitoring.</p>
+          </div>
+        </div>
+        <div class="panel" style="padding: 16px;">
+          <div id="waterModuleContent">Loading water management data...</div>
+        </div>
+      </section>
+
+      <!-- Health Page -->
+      <section id="health" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Health &amp; Biosecurity</h1>
+            <p>Pathogen testing, gut health analysis, and biosecurity protocols.</p>
+          </div>
+        </div>
+        <div class="panel" style="padding: 16px;">
+          <div id="healthModuleContent">Loading health and biosecurity data...</div>
+        </div>
+      </section>
+
+      <!-- Reports Page -->
+      <section id="reports" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Telemetry &amp; Operations Reports</h1>
+            <p>Export authenticated farm telemetry datasets in CSV format.</p>
+          </div>
+          <button class="btn-primary-blue" id="btnExportCsv">Export Telemetry CSV</button>
+        </div>
+        <div class="panel" style="padding: 16px;">
+          <p style="color: var(--text-muted); margin-bottom: 10px;">
+            Exports all registered ponds and latest telemetry metrics reported by the backend API.
+          </p>
+          <div id="reportExportStatus" style="font-size: 11px; color: var(--text-secondary);">Ready to export.</div>
+        </div>
+      </section>
+
+      <!-- Settings Page -->
+      <section id="settings" class="section-page">
+        <div class="section-page-heading">
+          <div>
+            <h1>Farm &amp; System Settings</h1>
+            <p>Gateway configuration, user permissions, and API endpoints.</p>
+          </div>
+        </div>
+        <div class="panel" style="padding: 16px;">
+          <div id="settingsModuleContent">Loading settings...</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast-notification" role="status" aria-live="polite"></div>
+
+  <!-- Main JavaScript Bundle -->
+  <script src="/static/js/dashboard.js?v=20261030-final"></script>
+</body>
+</html>
