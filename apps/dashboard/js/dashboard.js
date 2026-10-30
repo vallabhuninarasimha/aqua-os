@@ -1,34 +1,248 @@
 (() => {
   'use strict';
-  const ponds = [
-    {n:1,name:'Tank 1',status:'normal',do:6.8,temp:28.1,ph:7.8,salinity:40,sensor:'connected',ageMin:2,source:'SIMULATED',cultureStage:'Grow-out',species:'Vannamei'},
-    {n:2,name:'Tank 2',status:'critical',do:4.9,temp:29.4,ph:7.8,salinity:42,sensor:'connected',ageMin:2,source:'SIMULATED',cultureStage:'Grow-out',species:'Vannamei'},
-    {n:3,name:'Tank 3',status:'watch',do:5.8,temp:29.1,ph:7.6,salinity:41,sensor:'connected',ageMin:4,source:'SIMULATED',cultureStage:'Grow-out',species:'Vannamei'},
-    {n:4,name:'Tank 4',status:'normal',do:6.9,temp:28.0,ph:7.9,salinity:40,sensor:'stale',ageMin:18,source:'SIMULATED',cultureStage:'Grow-out',species:'Vannamei'}
-  ];
-  const tasks=[{title:'Check DO (Tank 1)',time:'09:00 AM',done:true},{title:'Inspect Tank 2 aerators',time:'10:00 AM',done:false},{title:'Check feeding response (Tank 3)',time:'11:00 AM',done:false},{title:'Inspect Tank 4 inlet',time:'02:00 PM',done:false}];
-  const equipment=[{name:'Aerator 1',kind:'Aeration',on:true,icon:'◉'},{name:'Aerator 2',kind:'Aeration',on:true,icon:'◉'},{name:'Auto Feeder',kind:'Feeding',on:false,icon:'▤'},{name:'Inlet Pump',kind:'Water inlet',on:false,icon:'⇧'},{name:'Outlet Pump',kind:'Water outlet',on:false,icon:'⇩'}];
-  let selectedPond=2, chartType='do', toastTimer;
-  const events=[{tank:2,type:'Critical alert',detail:'DO below illustrative threshold',time:'10:20 AM',severity:'critical'},{tank:3,type:'Watch alert',detail:'Temperature trend needs review',time:'09:48 AM',severity:'watch'},{tank:4,type:'Data freshness',detail:'Latest sample is older than 15 minutes',time:'Now',severity:'watch'}];
-  const limits={doMin:5.5,tempMax:30,phMin:7.0,phMax:9.0}; // illustrative defaults; configure for the farm before use
-  const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-  function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3000)}
-  function openModal(title,desc){$('#modalTitle').textContent=title;$('#modalText').textContent=desc;$('#modal').hidden=false;$('#modalOk').focus()}
-  function showView(view){if(!$('#'+view))return;$$('.view').forEach(v=>v.classList.toggle('active',v.id===view));$$('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));if(view==='owner'){drawChart();renderTable()}if(view==='pond'){renderPond();drawPondChart()}window.scrollTo({top:0,behavior:'smooth'})}
-  function renderPonds(){const grid=$('#pondGrid');grid.innerHTML=ponds.map(p=>`<button class="pond-card ${p.status}" data-open-pond="${p.n}" aria-label="Open ${p.name}, ${p.status}"><span class="pond-name">${p.name}<span class="pond-badge">${p.status==='critical'?'!':p.status==='watch'?'WATCH':'OK'}</span></span><div class="pond-reading">DO <b>${p.do.toFixed(1)}</b><br>Temp <b>${p.temp.toFixed(1)}</b>°C<br>pH <b>${p.ph.toFixed(1)}</b></div><span class="pond-status">${p.status==='critical'?'● Critical':p.status==='watch'?'● Watch':'● Normal'} · ${p.sensor==='stale'?'STALE DATA':'SAMPLE'}</span></button>`).join('');updateSummary() }
-  function updateSummary(){const avg=(k)=>ponds.reduce((a,p)=>a+p[k],0)/ponds.length;const vals=[...$$('.kpi-row .metric strong')];if(vals.length>=4){vals[0].innerHTML=`${avg('do').toFixed(1)} <small>mg/L</small>`;vals[1].innerHTML=`${avg('temp').toFixed(1)} <small>°C</small>`;vals[2].textContent=avg('ph').toFixed(1);vals[3].innerHTML=`${avg('salinity').toFixed(1)} <small>ppt</small>`}const owners=$$('.owner-kpis .metric strong');if(owners.length>=3){owners[0].textContent=ponds.length;owners[1].innerHTML=`${avg('do').toFixed(1)} <small>mg/L</small>`;owners[2].innerHTML=`${avg('temp').toFixed(1)} <small>°C</small>`}const counts={normal:ponds.filter(p=>p.status==='normal').length,watch:ponds.filter(p=>p.status==='watch').length,critical:ponds.filter(p=>p.status==='critical').length};const health=$('.health-ring b');if(health)health.textContent=`${Math.round(counts.normal/ponds.length*100)}%`;const legends=$$('.health-legend b');if(legends.length>=3){legends[0].textContent=counts.normal;legends[1].textContent=counts.watch;legends[2].textContent=counts.critical}const foot=$('.farm-foot span:last-child');if(foot)foot.innerHTML=`<i class="dot green"></i> ${counts.normal} Normal &nbsp; <i class="dot amber"></i> ${counts.watch} Watch &nbsp; <i class="dot red"></i> ${counts.critical} Critical`;const totalAlerts=$('.critical b');if(totalAlerts)totalAlerts.textContent=`${counts.critical} Critical Alert${counts.critical===1?'':'s'}`}
-  function renderSensorHealth(p){let panel=$('#sensorHealthPanel');if(!panel){panel=document.createElement('section');panel.id='sensorHealthPanel';panel.className='panel sensor-health-panel';panel.style.cssText='padding:14px;margin-top:12px';$('#pond').querySelector('.pond-detail-grid').insertAdjacentElement('afterend',panel)}panel.innerHTML=`<div class="panel-heading"><div><h2>Sensor health & tank configuration</h2><p>Configuration preview · not persisted</p></div><span class="status-chip ${p.sensor==='stale'?'watch-chip':'normal-chip'}">${p.sensor==='stale'?'STALE SAMPLE':'SIMULATED DATA'}</span></div><div class="sensor-health-grid"><div><small>Data source</small><b>${p.source}</b></div><div><small>Last sample age</small><b>${p.ageMin} minutes ${p.ageMin>15?'· STALE':''}</b></div><div><small>Sensor connectivity</small><b>${p.sensor==='connected'?'Connected (simulated)':'No recent sample'}</b></div><div><small>Species</small><b>${p.species}</b></div><div><small>Culture stage</small><b>${p.cultureStage}</b></div><div><small>Configured DO alert</small><b>${limits.doMin.toFixed(1)} mg/L (illustrative)</b></div></div><p class="safety-note">Sample data only. Thresholds must be reviewed by the farm operator and aquaculture specialist before real use. No equipment command is sent from this screen.</p>`}
-  function renderTable(){const q=($('#pondSearch')?.value||'').toLowerCase(),filter=$('#pondFilter')?.value||'all';$('#pondTable').innerHTML=ponds.filter(p=>(`${p.name.toLowerCase()} tank ${p.n} t${p.n}`).includes(q)&&(filter==='all'||(filter==='normal'?p.status==='normal':p.status!=='normal'))).map(p=>`<tr><td class="table-pond">${p.name}</td><td><span class="status-chip ${p.status==='critical'?'critical-chip':p.status==='watch'?'watch-chip':'normal-chip'}">${p.status==='critical'?'Critical':p.status==='watch'?'Watch':'Normal'}</span></td><td>${p.do.toFixed(1)}</td><td>${p.temp.toFixed(1)}</td><td>${p.ph.toFixed(1)}</td><td>${p.salinity}</td><td><span class="status-chip ${p.ageMin>15?'watch-chip':'normal-chip'}">${p.ageMin>15?'Stale':'Sample'}</span></td><td><button class="table-open" data-open-pond="${p.n}">Details →</button></td></tr>`).join('')||'<tr><td colspan="7">No tanks match your search.</td></tr>'}
-  function renderTasks(){$('#taskList').innerHTML=tasks.map((t,i)=>`<div class="task-row ${t.done?'done':''}"><button class="task-check ${t.done?'checked':''}" data-task="${i}" aria-label="${t.done?'Mark incomplete':'Complete'}: ${t.title}">${t.done?'✓':''}</button><div class="task-content"><b>${t.title}</b><small>${t.time}</small></div><span class="dot ${t.done?'green':'amber'}"></span></div>`).join('');$('#taskCount').textContent=`${tasks.filter(t=>t.done).length} / ${tasks.length} done`}
-  function renderEquipment(){$('#equipmentList').innerHTML=equipment.map((e,i)=>`<div class="equipment-row"><span class="equipment-icon">${e.icon}</span><span class="equipment-name"><b>${e.name}</b><small>${e.kind} · simulated state</small></span><button class="toggle ${e.on?'on':''}" data-equipment="${i}" aria-label="Toggle ${e.name}" aria-pressed="${e.on}"></button></div>`).join('')}
-  function renderPond(){const p=ponds.find(x=>x.n===selectedPond)||ponds[1];$('#pondTitle').textContent=`${p.name} · Detail View`,$('#pondHeroTitle').textContent=`${p.name}`,$('#pondDO').innerHTML=`${p.do.toFixed(1)} <small>mg/L</small>`,$('#pondTemp').innerHTML=`${p.temp.toFixed(1)} <small>°C</small>`,$('#pondPH').textContent=p.ph.toFixed(1),$('#pondSalinity').innerHTML=`${p.salinity} <small>ppt</small>`;const c=$('#pondCritical');c.className='status-chip '+(p.status==='critical'?'critical-chip':p.status==='watch'?'watch-chip':'normal-chip');c.textContent=p.status==='critical'?'● Critical: Low DO':p.status==='watch'?'● Watch: Review readings':'● Normal';renderSensorHealth(p);}
-  function drawLineChart(canvas,values,labels,opts={}){if(!canvas)return;const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;const dpr=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);const w=rect.width,h=rect.height,pad={l:35,r:12,t:14,b:18},cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;ctx.clearRect(0,0,w,h);const min=opts.min??Math.floor(Math.min(...values)-1),max=opts.max??Math.ceil(Math.max(...values)+1);ctx.font='10px DM Sans, sans-serif';for(let i=0;i<5;i++){const y=pad.t+ch*i/4;ctx.strokeStyle='#1b3547';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillStyle='#7994a8';ctx.textAlign='right';ctx.fillText((max-(max-min)*i/4).toFixed(opts.decimals??0),pad.l-8,y+3)}const points=values.map((v,i)=>({x:pad.l+cw*i/(values.length-1),y:pad.t+ch*(max-v)/(max-min)}));const grad=ctx.createLinearGradient(0,pad.t,0,h-pad.b);grad.addColorStop(0,'#149fff55');grad.addColorStop(1,'#149fff00');ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.lineTo(points[points.length-1].x,h-pad.b);ctx.lineTo(points[0].x,h-pad.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.strokeStyle='#20a7ff';ctx.lineWidth=2;ctx.stroke();points.forEach((p,i)=>{if(i%4===0||i===points.length-1){ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2);ctx.fillStyle='#6bd6ff';ctx.fill()}})}
-  function drawChart(){let vals=Array.from({length:28},(_,i)=>chartType==='do'?6.2+Math.sin(i*.7)*.6+Math.cos(i*.23)*.3:chartType==='temp'?28+Math.sin(i*.5)*.7:chartType==='ph'?7.8+Math.sin(i*.4)*.15:42+Math.sin(i*.3)*1.5);drawLineChart($('#trendChart'),vals,[],{min:chartType==='do'?4:chartType==='temp'?25:chartType==='ph'?7:35,max:chartType==='do'?10:chartType==='temp'?32:chartType==='ph'?9:50,decimals:chartType==='ph'?1:0})}
-  function drawPondChart(){drawLineChart($('#pondChart'),Array.from({length:18},(_,i)=>6.2+Math.sin(i*.55)*.4+Math.cos(i*.2)*.2),[],{min:4,max:9,decimals:1})}
-  function action(name){const map={alerts:['Recent alerts','Sample alert list only. No notification service is connected.'],scan:['Shrimp scan preview','Image upload and AI analysis are not connected yet.'],report:['Report an issue','Issue logging will be connected after the UI is approved.'],emergency:['Emergency contact','This preview cannot place calls or contact farm staff. Configure and verify real emergency contacts before production.'],manual:['Manual control','Hardware commands are intentionally disabled in this UI-only phase.'],settings:['Pond settings','Settings are not persisted or connected to a backend yet.'],history:['Action history','No real actuator action history is connected.']};openModal(...(map[name]||['Preview action','This feature is not connected in the UI prototype.']))}
-  document.addEventListener('click',e=>{const view=e.target.closest('[data-view]');if(view){showView(view.dataset.view);return}const pond=e.target.closest('[data-open-pond]');if(pond){selectedPond=Number(pond.dataset.openPond);showView('pond');return}const task=e.target.closest('[data-task]');if(task){tasks[Number(task.dataset.task)].done=!tasks[Number(task.dataset.task)].done;renderTasks();return}const eq=e.target.closest('[data-equipment]');if(eq){const item=equipment[Number(eq.dataset.equipment)];item.on=!item.on;renderEquipment();toast(`${item.name}: preview state ${item.on?'ON':'OFF'} — no hardware command sent.`);return}const chart=e.target.closest('[data-chart]');if(chart){chartType=chart.dataset.chart;$$('[data-chart]').forEach(b=>b.classList.toggle('active',b===chart));drawChart();return}const a=e.target.closest('[data-action]');if(a){action(a.dataset.action);return}});
-  $('#pondSearch').addEventListener('input',renderTable);$('#pondFilter').addEventListener('change',renderTable);$('#period').addEventListener('change',()=>toast('This is sample trend data; date range does not request backend data.'));$('#micButton').addEventListener('click',()=>{ $('#micTitle').textContent='Voice service not connected';$('#micHint').textContent='This UI-only preview does not access your microphone or run speech recognition.';toast('Voice assistant is a visual placeholder in this phase.')});$('#modalClose').addEventListener('click',()=>$('#modal').hidden=true);$('#modalOk').addEventListener('click',()=>$('#modal').hidden=true);$('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))$('#modal').hidden=true});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#modal').hidden=true});
 
+  const FARM_ID = () => api.currentUser?.farm_id || 'farm-alpha';
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const state = { overview: null, selectedPondId: null, refreshTimer: null, streamState: 'DISCONNECTED' };
 
-  renderPonds();renderTable();renderTasks();renderEquipment();renderPond();drawChart();drawPondChart();const updateClock=()=>{const d=new Date();$('#clock').innerHTML=d.toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'})+'<br><small>'+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</small>'};updateClock();setInterval(updateClock,60000);let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{drawChart();drawPondChart()},100)});
+  function setText(selector, value) {
+    const node = $(selector);
+    if (node) node.textContent = value == null || value === '' ? '—' : String(value);
+  }
+
+  function metric(pond, key) {
+    const item = pond?.metrics?.[key];
+    return item && Number.isFinite(Number(item.value))
+      ? { value: Number(item.value), unit: item.unit || '', quality: item.quality || 'UNKNOWN' }
+      : null;
+  }
+
+  function formatMetric(pond, key, digits = 1) {
+    const item = metric(pond, key);
+    return item ? `${item.value.toFixed(digits)} ${item.unit}`.trim() : 'No reading';
+  }
+
+  function statusClass(status) {
+    const value = String(status || 'UNKNOWN').toUpperCase();
+    if (value === 'CRITICAL' || value === 'EMERGENCY') return 'critical';
+    if (value === 'WARNING') return 'watch';
+    if (value === 'NORMAL') return 'normal';
+    return 'degraded';
+  }
+
+  function showNotice(message, kind = 'info') {
+    let notice = $('#apiNotice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'apiNotice';
+      notice.setAttribute('role', 'status');
+      notice.style.cssText = 'margin:12px 0;padding:12px 16px;border:1px solid #38536a;border-radius:10px;background:#102536;color:#e8f2fb';
+      $('.app-shell')?.insertBefore(notice, $('main'));
+    }
+    notice.dataset.kind = kind;
+    notice.textContent = message;
+  }
+
+  function clearNotice() {
+    $('#apiNotice')?.remove();
+  }
+
+  function showLogin(error = '') {
+    let panel = $('#aquaLogin');
+    if (!panel) {
+      panel = document.createElement('section');
+      panel.id = 'aquaLogin';
+      panel.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#071421ee;display:grid;place-items:center;padding:20px';
+      panel.innerHTML = `
+        <form id="aquaLoginForm" style="width:min(420px,100%);padding:28px;background:#0c1d2c;border:1px solid #29465d;border-radius:16px;color:#e8f2fb">
+          <div style="font-size:12px;letter-spacing:2px;color:#22e5c2">AQUA OS · SECURE ACCESS</div>
+          <h2 style="margin:10px 0 6px">Farm sign in</h2>
+          <p style="color:#8ea6b9;margin:0 0 20px">Sign in to load your farm's persisted operational data.</p>
+          <label style="display:block;margin:12px 0 6px">Username</label>
+          <input name="username" autocomplete="username" required style="width:100%;padding:12px;border-radius:8px;border:1px solid #38536a;background:#071421;color:#fff">
+          <label style="display:block;margin:12px 0 6px">Password</label>
+          <input name="password" type="password" autocomplete="current-password" required style="width:100%;padding:12px;border-radius:8px;border:1px solid #38536a;background:#071421;color:#fff">
+          <p id="aquaLoginError" role="alert" style="color:#ff8794;min-height:20px"></p>
+          <button type="submit" style="width:100%;padding:12px;border:0;border-radius:8px;background:#22e5c2;color:#062019;font-weight:700;cursor:pointer">Sign in</button>
+        </form>`;
+      document.body.appendChild(panel);
+      $('#aquaLoginForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const button = $('button[type="submit"]', event.currentTarget);
+        button.disabled = true;
+        button.textContent = 'Signing in…';
+        $('#aquaLoginError').textContent = '';
+        try {
+          await api.login(String(form.get('username')).trim(), String(form.get('password')));
+          panel.remove();
+          await loadOverview();
+          connectLiveUpdates();
+        } catch (err) {
+          $('#aquaLoginError').textContent = err.message === 'UNAUTHORIZED' ? 'Invalid username or password.' : err.message;
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Sign in';
+        }
+      });
+    }
+    if (error) $('#aquaLoginError').textContent = error;
+  }
+
+  function renderPonds(ponds) {
+    const grid = $('#pondGrid');
+    if (!grid) return;
+    grid.replaceChildren();
+    if (!ponds.length) {
+      grid.textContent = 'No ponds are configured for this farm.';
+      return;
+    }
+    ponds.forEach((pond) => {
+      const card = document.createElement('button');
+      card.className = `pond-card ${statusClass(pond.status)}`;
+      card.type = 'button';
+      card.dataset.pondId = pond.pond_id;
+      const name = document.createElement('span');
+      name.className = 'pond-name';
+      name.textContent = pond.name || pond.pond_id;
+      const readings = document.createElement('div');
+      readings.className = 'pond-reading';
+      readings.textContent = `DO ${formatMetric(pond, 'DISSOLVED_OXYGEN')} · Temp ${formatMetric(pond, 'TEMPERATURE')} · pH ${formatMetric(pond, 'PH')}`;
+      const status = document.createElement('span');
+      status.className = 'pond-status';
+      const freshness = pond.freshness_seconds == null ? 'No telemetry' : pond.is_stale ? `Stale · ${Math.round(pond.freshness_seconds)}s` : `Updated ${Math.round(pond.freshness_seconds)}s ago`;
+      status.textContent = `${pond.status} · ${pond.is_simulated ? 'SIMULATED SOURCE' : 'MEASURED SOURCE'} · ${freshness}`;
+      card.append(name, readings, status);
+      card.addEventListener('click', () => selectPond(pond.pond_id));
+      grid.appendChild(card);
+    });
+  }
+
+  function renderOverview(data) {
+    state.overview = data;
+    const ponds = data.ponds || [];
+    const summary = data.summary || {};
+    const measured = ponds.filter(p => !p.is_simulated && !p.is_stale);
+    const readings = key => measured.map(p => metric(p, key)).filter(Boolean).map(m => m.value);
+    const average = values => values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : '—';
+
+    const kpis = $$('.kpi-row .metric strong');
+    if (kpis.length >= 4) {
+      kpis[0].textContent = average(readings('DISSOLVED_OXYGEN'));
+      kpis[1].textContent = average(readings('TEMPERATURE'));
+      kpis[2].textContent = average(readings('PH'));
+      kpis[3].textContent = average(readings('SALINITY'));
+    }
+    setText('.pond-count b', summary.total_ponds ?? ponds.length);
+    const heading = $('.farm-panel h2');
+    if (heading) heading.textContent = `Farm Overview · ${summary.total_ponds ?? ponds.length} ponds`;
+    const foot = $('.farm-foot span:last-child');
+    if (foot) foot.textContent = `${summary.normal_ponds || 0} Normal · ${summary.warning_ponds || 0} Warning · ${summary.critical_ponds || 0} Critical · ${summary.degraded_ponds || 0} Degraded · ${summary.unknown_ponds || 0} Unknown`;
+    const critical = $('.critical b');
+    if (critical) critical.textContent = `${summary.critical_ponds || 0} Critical`;
+    renderPonds(ponds);
+    const updated = new Date(data.evaluated_at);
+    setText('.farm-foot span:first-child', `Evaluated: ${Number.isNaN(updated.getTime()) ? 'unknown' : updated.toLocaleString()}`);
+    const edge = data.edge_status || {};
+    const status = edge.is_connected ? 'EDGE CONNECTED' : edge.sovereign_mode_active ? 'OFFLINE EDGE MODE' : 'EDGE NOT CONNECTED';
+    const automation = $('.auto-pill');
+    if (automation) automation.textContent = status;
+    const sourceNote = ponds.every(p => p.is_simulated) ? 'All current telemetry records are marked simulated; do not treat them as physical measurements.' :
+      measured.length ? `${measured.length} ponds have fresh measured telemetry. Simulated and stale records are excluded from measured averages.` :
+      'No fresh measured telemetry is available. Metrics are intentionally not estimated.';
+    showNotice(sourceNote, measured.length ? 'success' : 'warning');
+    if (state.selectedPondId && ponds.some(p => p.pond_id === state.selectedPondId)) selectPond(state.selectedPondId);
+    else if (ponds.length) selectPond(ponds[0].pond_id);
+  }
+
+  function selectPond(pondId) {
+    state.selectedPondId = pondId;
+    const pond = state.overview?.ponds?.find(p => p.pond_id === pondId);
+    if (!pond) return;
+    const title = $('#pondTitle');
+    if (title) title.textContent = `${pond.name} · Live Detail`;
+    setText('#pondHeroTitle', pond.name);
+    const values = {
+      '#pondDO': formatMetric(pond, 'DISSOLVED_OXYGEN'),
+      '#pondTemp': formatMetric(pond, 'TEMPERATURE'),
+      '#pondPH': formatMetric(pond, 'PH'),
+      '#pondSalinity': formatMetric(pond, 'SALINITY'),
+    };
+    Object.entries(values).forEach(([selector, value]) => setText(selector, value));
+    const badge = $('#pondCritical');
+    if (badge) {
+      badge.className = `status-chip ${statusClass(pond.status)}-chip`;
+      badge.textContent = pond.is_safe ? 'Safety evaluation: safe' : `Attention required: ${pond.status}`;
+    }
+    const health = $('#sensorHealthPanel');
+    if (health) health.textContent = `Data source: ${pond.is_simulated ? 'SIMULATED' : 'MEASURED'} · Freshness: ${pond.freshness_seconds == null ? 'No data' : Math.round(pond.freshness_seconds) + ' seconds'} · Aerator feedback: ${pond.aerator_status || 'UNKNOWN'} · ${(pond.active_alerts || []).join(' | ')}`;
+  }
+
+  async function loadOverview() {
+    if (!api.isAuthenticated()) return showLogin();
+    try {
+      const data = await api.getDashboardOverview(FARM_ID());
+      clearNotice();
+      renderOverview(data);
+    } catch (error) {
+      if (error.message === 'UNAUTHORIZED') return showLogin('Your session expired. Please sign in again.');
+      showNotice(`Unable to load farm data: ${error.message}. Displaying no cached or fabricated readings.`, 'error');
+      const grid = $('#pondGrid');
+      if (grid) grid.textContent = 'Farm data unavailable. Check API connectivity and permissions.';
+    }
+  }
+
+  function connectLiveUpdates() {
+    if (!api.isAuthenticated()) return;
+    api.connectStream({
+      onStateChange: (value) => {
+        state.streamState = value;
+        const node = $('.clock');
+        if (node) node.title = `Live telemetry stream: ${value}`;
+      },
+      onPondUpdate: () => loadOverview(),
+    });
+  }
+
+  function renderEmptyTrendCharts() {
+    ['trendChart', 'pondChart'].forEach(id => {
+      const canvas = document.getElementById(id);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const parent = canvas.parentElement;
+      if (parent && !parent.querySelector('.no-telemetry-state')) {
+        const note = document.createElement('p');
+        note.className = 'no-telemetry-state';
+        note.textContent = 'Historical trend will appear when persisted telemetry is available.';
+        note.style.color = '#8ea6b9';
+        parent.appendChild(note);
+      }
+    });
+  }
+
+  document.addEventListener('click', event => {
+    const view = event.target.closest('[data-view]');
+    if (view) {
+      $$('.view').forEach(section => section.classList.toggle('active', section.id === view.dataset.view));
+      $$('.view-tab').forEach(tab => tab.classList.toggle('active', tab === view));
+      if (view.dataset.view === 'pond' && state.selectedPondId) selectPond(state.selectedPondId);
+    }
+    const action = event.target.closest('[data-action]');
+    if (action && action.dataset.action === 'logout') {
+      api.logout();
+      showLogin();
+    }
+  });
+
+  const updateClock = () => {
+    const node = $('#clock');
+    if (node) node.textContent = new Date().toLocaleString('en-IN');
+  };
+
+  updateClock();
+  setInterval(updateClock, 30000);
+  renderEmptyTrendCharts();
+  loadOverview().then(connectLiveUpdates);
+  state.refreshTimer = setInterval(loadOverview, 15000);
 })();
