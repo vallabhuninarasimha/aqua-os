@@ -580,10 +580,6 @@ class AquaAPIClient {
     return this.request(`/api/v1/health/ponds/${encodeURIComponent(pondId)}/treatments?farm_id=${encodeURIComponent(farmId)}&limit=${limit}`);
   }
 
-  async resetScenarios() {
-    return this.request("/api/v1/simulator/reset", { method: "POST" });
-  }
-
   // --- Water Management Endpoints ---
   async getPondWaterStatus(pondId, farmId = "farm-alpha") {
     return this.request(`/api/v1/water/ponds/${encodeURIComponent(pondId)}?farm_id=${encodeURIComponent(farmId)}`);
