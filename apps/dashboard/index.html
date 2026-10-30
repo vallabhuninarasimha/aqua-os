@@ -90,10 +90,10 @@
         <div class="panel-heading"><div><h2>Shrimp sample grading</h2><p>Measured individual weights and buyer-configured count/kg bands</p></div></div>
         <form class="grading-form" id="gradingForm">
           <label>Individual shrimp weights (grams, comma-separated; max 500)
-            <textarea id="gradingWeights" required placeholder="Enter measured weights, e.g. 32.1, 30.8, 28.4"></textarea>
+            <textarea id="gradingWeights" required placeholder="Paste individually measured weights in grams, separated by commas"></textarea>
           </label>
           <label>Buyer/farm grade bands (JSON; non-overlapping count/kg ranges)
-            <textarea id="gradingBands" required placeholder='[{"label":"Buyer grade A","min_count_per_kg":25,"max_count_per_kg":30}]'></textarea>
+            <textarea id="gradingBands" required placeholder="Enter the actual count/kg ranges agreed with your buyer"></textarea>
           </label>
           <button type="submit" id="gradingSubmit">Analyze measured sample</button>
           <p class="safety-note">This classifies only the submitted sample. It is not camera recognition, whole-pond grading or an automatic harvest decision.</p>
