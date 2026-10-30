@@ -110,6 +110,42 @@ class AquaAPIClient {
     );
   }
 
+  async getSimulatorStatus() {
+    return this.request("/api/v1/simulator/status");
+  }
+
+  async startSimulator(intervalSeconds = 3.0) {
+    return this.request("/api/v1/simulator/start", {
+      method: "POST",
+      body: JSON.stringify({ interval_seconds: intervalSeconds }),
+    });
+  }
+
+  async stopSimulator() {
+    return this.request("/api/v1/simulator/stop", { method: "POST" });
+  }
+
+  async stepSimulator() {
+    return this.request("/api/v1/simulator/step", { method: "POST" });
+  }
+
+  async injectScenario(pondId, scenarioType, durationHours = 6.0) {
+    return this.request("/api/v1/simulator/scenario", {
+      method: "POST",
+      body: JSON.stringify({
+        pond_id: pondId,
+        scenario_type: scenarioType,
+        duration_hours: durationHours,
+      }),
+    });
+  }
+
+  async applySimulationDataset(datasetId, payload) {
+    return this.request(`/api/v1/simulator/datasets/${encodeURIComponent(datasetId)}/apply`, {
+      method: "POST", body: JSON.stringify(payload),
+    });
+  }
+
   async queueEdgeDryRunCommand(payload) {
     return this.request("/api/v1/edge/commands", { method: "POST", body: JSON.stringify(payload) });
   }
@@ -580,6 +616,10 @@ class AquaAPIClient {
     return this.request(`/api/v1/health/ponds/${encodeURIComponent(pondId)}/treatments?farm_id=${encodeURIComponent(farmId)}&limit=${limit}`);
   }
 
+  async resetScenarios() {
+    return this.request("/api/v1/simulator/reset", { method: "POST" });
+  }
+
   // --- Water Management Endpoints ---
   async getPondWaterStatus(pondId, farmId = "farm-alpha") {
     return this.request(`/api/v1/water/ponds/${encodeURIComponent(pondId)}?farm_id=${encodeURIComponent(farmId)}`);
@@ -643,27 +683,6 @@ class AquaAPIClient {
     });
   }
 
-  async queryFarmAgent(question, farmId = this.currentUser?.farm_id || "farm-alpha", conversationId = null) {
-    return this.request("/api/v1/agent/query", {
-      method: "POST",
-      body: JSON.stringify({
-        question,
-        farm_id: farmId,
-        ...(conversationId ? { conversation_id: conversationId } : {}),
-      }),
-    });
-  }
-
-  async analyzeShrimpGrading(pondId, weightsG, gradeBands, farmId = this.currentUser?.farm_id || "farm-alpha") {
-    return this.request(
-      `/api/v1/production/ponds/${encodeURIComponent(pondId)}/grading/analyze?farm_id=${encodeURIComponent(farmId)}`,
-      {
-        method: "POST",
-        body: JSON.stringify({ weights_g: weightsG, grade_bands: gradeBands }),
-      }
-    );
-  }
-
   /**
    * Connect to real-time Server-Sent Events stream with backoff recovery.
    */
@@ -694,6 +713,10 @@ class AquaAPIClient {
 
       this.eventSource.addEventListener("pond_update", (e) => {
         if (callbacks.onPondUpdate) callbacks.onPondUpdate(JSON.parse(e.data));
+      });
+
+      this.eventSource.addEventListener("simulator_cycle", (e) => {
+        if (callbacks.onSimulatorCycle) callbacks.onSimulatorCycle(JSON.parse(e.data));
       });
 
       this.eventSource.addEventListener("heartbeat", (e) => {
