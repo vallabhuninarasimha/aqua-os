@@ -107,7 +107,7 @@
       name.textContent = pond.name || pond.pond_id;
       const readings = document.createElement('div');
       readings.className = 'pond-reading';
-      readings.textContent = `DO ${formatMetric(pond, 'DISSOLVED_OXYGEN')} · Temp ${formatMetric(pond, 'TEMPERATURE')} · pH ${formatMetric(pond, 'PH')}`;
+      readings.textContent = `DO ${formatMetric(pond, 'dissolved_oxygen')} · Temp ${formatMetric(pond, 'temperature')} · pH ${formatMetric(pond, 'ph')}`;
       const status = document.createElement('span');
       status.className = 'pond-status';
       const freshness = pond.freshness_seconds == null ? 'No telemetry' : pond.is_stale ? `Stale · ${Math.round(pond.freshness_seconds)}s` : `Updated ${Math.round(pond.freshness_seconds)}s ago`;
@@ -128,10 +128,10 @@
 
     const kpis = $$('.kpi-row .metric strong');
     if (kpis.length >= 4) {
-      kpis[0].textContent = average(readings('DISSOLVED_OXYGEN'));
-      kpis[1].textContent = average(readings('TEMPERATURE'));
-      kpis[2].textContent = average(readings('PH'));
-      kpis[3].textContent = average(readings('SALINITY'));
+      kpis[0].textContent = average(readings('dissolved_oxygen'));
+      kpis[1].textContent = average(readings('temperature'));
+      kpis[2].textContent = average(readings('ph'));
+      kpis[3].textContent = average(readings('salinity'));
     }
     setText('.pond-count b', summary.total_ponds ?? ponds.length);
     const heading = $('.farm-panel h2');
@@ -163,10 +163,10 @@
     if (title) title.textContent = `${pond.name} · Live Detail`;
     setText('#pondHeroTitle', pond.name);
     const values = {
-      '#pondDO': formatMetric(pond, 'DISSOLVED_OXYGEN'),
-      '#pondTemp': formatMetric(pond, 'TEMPERATURE'),
-      '#pondPH': formatMetric(pond, 'PH'),
-      '#pondSalinity': formatMetric(pond, 'SALINITY'),
+      '#pondDO': formatMetric(pond, 'dissolved_oxygen'),
+      '#pondTemp': formatMetric(pond, 'temperature'),
+      '#pondph': formatMetric(pond, 'ph'),
+      '#pondSalinity': formatMetric(pond, 'salinity'),
     };
     Object.entries(values).forEach(([selector, value]) => setText(selector, value));
     const badge = $('#pondCritical');
