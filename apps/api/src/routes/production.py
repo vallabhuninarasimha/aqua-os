@@ -11,6 +11,8 @@ from apps.api.src.dependencies import get_db_session
 from apps.api.src.security.dependencies import require_permission, verify_farm_access
 from apps.api.src.security.models import Permission, UserIdentity
 from apps.api.src.services.growth_production_service import GrowthProductionService
+from apps.api.src.domain.shrimp_grading import analyze_shrimp_sample
+from apps.api.src.infrastructure.repositories.sql_pond_repository import SQLPondRepository
 
 router = APIRouter(prefix="/production", tags=["Production Intelligence"])
 
@@ -72,6 +74,17 @@ class GrowthSamplingCreateRequest(BaseModel):
     observations: Optional[str] = Field(default=None, description="Gut fullness, hepatopancreas, shell condition")
     estimated_survival_pct: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Updated survival rate if observed")
     sample_date: Optional[datetime] = None
+
+
+class ShrimpGradeBandRequest(BaseModel):
+    label: str = Field(..., min_length=1, max_length=64)
+    min_count_per_kg: float = Field(..., gt=0.0)
+    max_count_per_kg: float = Field(..., gt=0.0)
+
+
+class ShrimpGradingAnalysisRequest(BaseModel):
+    weights_g: List[float] = Field(..., min_length=1, max_length=500)
+    grade_bands: List[ShrimpGradeBandRequest] = Field(..., min_length=1, max_length=20)
 
 
 # ============================================================================
@@ -370,3 +383,32 @@ async def get_farm_economics(
 
 
 
+
+
+
+@router.post("/ponds/{pond_id}/grading/analyze", response_model=Dict[str, Any])
+async def analyze_pond_shrimp_grading(
+    pond_id: str,
+    req: ShrimpGradingAnalysisRequest,
+    farm_id: str = Query(default=settings.default_farm_id, description="Farm identifier"),
+    user: UserIdentity = Depends(require_permission(Permission.PONDS_WRITE)),
+    session: Session = Depends(get_db_session),
+) -> Dict[str, Any]:
+    """Classify an individually weighed shrimp sample using farm-configured count/kg bands."""
+    verify_farm_access(user, farm_id)
+    if SQLPondRepository(session).get(farm_id, pond_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pond not found in this farm.")
+    try:
+        result = analyze_shrimp_sample(
+            weights_g=req.weights_g,
+            grade_bands=[band.model_dump() for band in req.grade_bands],
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    result.update({
+        "farm_id": farm_id,
+        "pond_id": pond_id,
+        "analyzed_by": user.username,
+        "evaluated_at": datetime.now().astimezone().isoformat(),
+    })
+    return result
