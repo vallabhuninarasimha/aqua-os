@@ -26,7 +26,6 @@ from apps.api.src.security.dependencies import (
     verify_farm_access,
 )
 from apps.api.src.security.models import Permission, UserIdentity
-from apps.api.src.services.simulator_service import simulator_service
 from apps.api.src.services.telemetry_broadcaster import broadcaster
 from apps.api.src.services.water_service import WaterManagementService
 from packages.telemetry_schema.models import MetricType
@@ -93,7 +92,6 @@ class DashboardOverviewResponse(BaseModel):
     summary: DashboardSummary
     ponds: List[PondCard]
     edge_status: EdgeGatewayStatus
-    simulator_status: dict
     biological_notice: str
     intake_pump_summary: Optional[Dict[str, Any]] = None
 
@@ -316,7 +314,6 @@ async def get_dashboard_overview(
         summary=summary,
         ponds=pond_cards,
         edge_status=edge_status,
-        simulator_status=simulator_service.get_status(),
         biological_notice=(
             "Provisional baseline standards for Litopenaeus vannamei. "
             "Biological thresholds must be calibrated against on-site water chemistry "
