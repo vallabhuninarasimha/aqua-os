@@ -910,3 +910,22 @@ class EdgeCommandORM(Base):
     result_json = Column(Text, nullable=False, default="{}")
     requested_by = Column(String(64), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+
+
+class ShrimpGradingSampleORM(Base):
+    """Auditable, individually measured shrimp size-grading sample."""
+
+    __tablename__ = "shrimp_grading_samples"
+
+    grade_sample_id = Column(String(36), primary_key=True, nullable=False)
+    farm_id = Column(String(64), nullable=False, index=True)
+    pond_id = Column(String(64), nullable=False, index=True)
+    sample_count = Column(Integer, nullable=False)
+    average_body_weight_g = Column(Float, nullable=False)
+    average_count_per_kg = Column(Float, nullable=False)
+    sample_weights_json = Column(Text, nullable=False)
+    grade_bands_json = Column(Text, nullable=False)
+    result_json = Column(Text, nullable=False)
+    recorded_by = Column(String(64), nullable=False)
+    sampled_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
