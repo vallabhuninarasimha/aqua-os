@@ -111,7 +111,7 @@
       const status = document.createElement('span');
       status.className = 'pond-status';
       const freshness = pond.freshness_seconds == null ? 'No telemetry' : pond.is_stale ? `Stale · ${Math.round(pond.freshness_seconds)}s` : `Updated ${Math.round(pond.freshness_seconds)}s ago`;
-      status.textContent = `${pond.status} · ${pond.is_simulated ? 'SIMULATED SOURCE' : 'MEASURED SOURCE'} · ${freshness}`;
+      status.textContent = `${pond.status} · ${(pond.data_source || (pond.data_source || (pond.is_simulated ? 'SIMULATED' : 'MEASURED'))) + ' SOURCE'} · ${freshness}`;
       card.append(name, readings, status);
       card.addEventListener('click', () => selectPond(pond.pond_id));
       grid.appendChild(card);
