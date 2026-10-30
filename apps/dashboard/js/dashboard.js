@@ -3,7 +3,7 @@
 
   const FARM_ID = () => api.currentUser?.farm_id || 'farm-alpha';
   const $ = (selector, root = document) => root.querySelector(selector);
-  const $ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+  const queryAll = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const state = { overview: null, selectedPondId: null, refreshTimer: null, streamState: 'DISCONNECTED' };
 
   function setText(selector, value) {
@@ -158,7 +158,7 @@
     const readings = key => measured.map(p => metric(p, key)).filter(Boolean).map(m => m.value);
     const average = values => values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : '—';
 
-    const kpis = $$('.kpi-row .metric strong');
+    const kpis = queryAll('.kpi-row .metric strong');
     if (kpis.length >= 4) {
       kpis[0].textContent = average(readings('dissolved_oxygen'));
       kpis[1].textContent = average(readings('temperature'));
@@ -280,7 +280,7 @@
         return;
       }
       try {
-        const weights = $('#gradingWeights').value.split(/[,,\\s]+/).filter(Boolean).map(Number);
+        const weights = $('#gradingWeights').value.split(/[,\\s]+/).filter(Boolean).map(Number);
         if (!weights.length || weights.some(value => !Number.isFinite(value))) {
           throw new Error('Enter valid comma-separated individual weights in grams.');
         }
