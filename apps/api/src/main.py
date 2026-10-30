@@ -50,8 +50,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         seed_default_users_if_empty(session)
 
     yield
-    # Shutdown: Clean up background simulation if active
-    simulator_service.stop()
+    # No background demo simulator is started by the production API.
 
 
 def create_app() -> FastAPI:
