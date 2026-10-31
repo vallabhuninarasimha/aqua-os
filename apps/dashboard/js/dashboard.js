@@ -1151,25 +1151,30 @@
   }
 
   function setInfoMode(mode) {
-    state.infoMode = mode;
-    $$("#infoModeSelector .mode-pill").forEach(pill => {
-      pill.classList.toggle("active", pill.dataset.mode === mode);
+    const allowedModes = ["manager", "farmer", "tech"];
+    const selectedMode = allowedModes.includes(mode) ? mode : "manager";
+    state.infoMode = selectedMode;
+    const dashboard = $("#dashboard");
+    if (dashboard) dashboard.dataset.infoMode = selectedMode;
+
+    $("#infoModeSelector .mode-pill").forEach(pill => {
+      const active = pill.dataset.mode === selectedMode;
+      pill.classList.toggle("active", active);
+      pill.setAttribute("aria-pressed", String(active));
     });
 
     const farmerContainer = $("#farmerModeContainer");
-    if (farmerContainer) {
-      if (mode === "farmer") {
-        farmerContainer.hidden = false;
-        renderFarmerMode();
-        toast("రైతు మోడ్ ప్రారంభించబడింది (Farmer Mode Active)");
-      } else {
-        farmerContainer.hidden = true;
-        if (mode === "tech") {
-          toast("Technical Telemetry & Hardware Diagnostics Mode Active");
-        } else {
-          toast("Farm Manager Operational Overview Active");
-        }
-      }
+    const technicalContainer = $("#technicalModeContainer");
+    if (farmerContainer) farmerContainer.hidden = selectedMode !== "farmer";
+    if (technicalContainer) technicalContainer.hidden = selectedMode !== "tech";
+
+    if (selectedMode === "farmer") {
+      renderFarmerMode();
+      toast("Farmer operations workspace active");
+    } else if (selectedMode === "tech") {
+      toast("Technical diagnostics workspace active");
+    } else {
+      toast("Manager overview active");
     }
   }
 
