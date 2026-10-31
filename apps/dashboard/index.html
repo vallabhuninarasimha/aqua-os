@@ -362,6 +362,16 @@
           </div>
         </div>
         
+        <section id="technicalModeContainer" class="technical-mode-container" hidden aria-label="Technical operations workspace">
+          <div class="role-workspace-heading"><div><span class="role-eyebrow">ENGINEERING WORKSPACE</span><h1>Technical Operations</h1><p>Device, telemetry and safety diagnostics. Unavailable readings are never represented as healthy.</p></div><span class="role-simulation-badge">HARDWARE NOT COMMISSIONED</span></div>
+          <div class="technical-status-grid">
+            <article class="technical-status-card"><span>Telemetry source</span><strong>Not connected</strong><small>Awaiting commissioned sensors</small></article>
+            <article class="technical-status-card"><span>Edge gateway</span><strong>Not verified</strong><small>Heartbeat unavailable</small></article>
+            <article class="technical-status-card"><span>Actuator feedback</span><strong>Not connected</strong><small>No physical state confirmation</small></article>
+            <article class="technical-status-card"><span>Control safety</span><strong>DRY-RUN ONLY</strong><small>No physical commands from this UI</small></article>
+          </div>
+          <article class="technical-panel"><div><span class="role-eyebrow">COMMISSIONING CHECKLIST</span><h2>Hardware readiness</h2></div><ul><li>Register each sensor and map it to a tank</li><li>Verify calibration and timestamp freshness</li><li>Confirm edge gateway connectivity and offline behavior</li><li>Verify actuator feedback, interlocks and emergency stop</li><li>Authorize physical control only after on-site safety validation</li></ul></article>
+        </section>
         <!-- ZONE 1: TOP HERO (AERIAL FARM VIEW) & RIGHT STACK (HEALTH, METRICS, ALERTS) -->
         <section class="zone-top-grid">
           
