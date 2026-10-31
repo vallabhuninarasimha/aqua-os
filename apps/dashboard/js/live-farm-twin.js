@@ -157,7 +157,7 @@
   for(let i=0;i<12;i++){const dot=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),new THREE.MeshBasicMaterial({color:0x9ceeff}));dot.position.set(0,.88,-9+i*.95);scene.add(dot);flowDots.push(dot);}
   raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();
   function fitOverview(){
-    state.view="overview";state.selected=-1;tankObjects.forEach(g=>g.userData.selection.material.opacity=0);
+    state.view="overview";state.selected=0;tankObjects.forEach(g=>g.userData.selection.material.opacity=0);
     controlsTarget.set(0,.6,0);camera.aspect=width()/height();camera.updateProjectionMatrix();
     const vfov=THREE.MathUtils.degToRad(camera.fov),hfov=2*Math.atan(Math.tan(vfov/2)*camera.aspect);
     const horizontal=29.5/(2*Math.tan(hfov/2)),vertical=18.5/(2*Math.tan(vfov/2));
@@ -193,7 +193,7 @@
     if(state.feeding&&Date.now()>state.feedUntil){state.feeding=false;if(feed)feed.textContent="▶ Start feeding demo";metrics();}
     tanks.forEach((t,i)=>{const s=elapsed;t.do=clamp(5.65+i*.08+Math.sin(s*.04+i)*.15,4.4,7.2);t.temp=clamp(28.4+i*.15+Math.sin(s*.02+i*.5)*.2,27,31.5);t.ph=clamp(7.85+i*.02+Math.sin(s*.01+i)*.02,7.5,8.4);t.sal=clamp(24+i*.3+Math.sin(s*.005+i)*.1,15,35);
       aerators[i].forEach((a,k)=>{const on=t.fans[k]&&!state.feeding;a.rotor.rotation.x=on?elapsed*7.5:0;a.splash.material.opacity=on?.28+.16*Math.sin(elapsed*4+k):.015;a.splash.scale.setScalar(on?1+.12*Math.sin(elapsed*5+k):.72);a.light.intensity=on?1.1:.04;a.droplets.forEach((d,n)=>{const phase=(elapsed*1.7+n*.19+k*.31)%1;d.visible=on;d.position.set(Math.sin(n*2.4+k)*(.28+phase*.9),on?.92+Math.sin(phase*Math.PI)*(.22+(n%4)*.11):.9,Math.cos(n*2.4+k)*(.22+phase*.65));d.material.opacity=on?Math.sin(phase*Math.PI)*.82:0;});});
-      waterMats[i].uniforms.uTime.value=elapsed;waterMats[i].uniforms.uEnergy.value=t.fans.filter(Boolean).length/4*(state.feeding?.12:1);
+      waterMats[i].uniforms.uTime.value=elapsed;waterMats[i].uniforms.uEnergy.value=Math.max(.06,t.fans.filter(Boolean).length/4*(state.feeding?.12:1));
     });
     resWater.material.uniforms.uTime.value=elapsed;flowDots.forEach((d,i)=>{d.position.z=-9+((elapsed*1.6+i*1.15)%13.6);d.position.y=.85+Math.sin(elapsed*2+i)*.08;});
     const clock=$("farmTwinClock");if(clock)clock.textContent=new Date().toLocaleTimeString();const env=$("farmTwinEnvironment");if(env)env.textContent=(state.night?"Night":"Daylight")+" · 2×2 Tank View · SIMULATION";
