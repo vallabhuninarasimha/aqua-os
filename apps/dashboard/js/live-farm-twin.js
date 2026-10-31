@@ -17,7 +17,8 @@
   ];
   const state={selected:0,night:(new Date().getHours()<6||new Date().getHours()>=18),feeding:false,feedUntil:0,zoom:1,paused:false};
   let THREE, renderer, scene, camera, controlsTarget, raf=0, last=0, elapsed=0, observer;
-  const tankObjects=[], aerators=[], waterMats=[], raycaster=null, pointer=null;
+  const tankObjects=[], aerators=[], waterMats=[];
+  let raycaster, pointer;
   try {
     THREE = await import("https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js");
   } catch (err) {
@@ -144,7 +145,7 @@
   let drag=null,theta=Math.atan2(camera.position.x,camera.position.z),phi=Math.acos(camera.position.y/camera.position.length()),radius=camera.position.length();
   canvas.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId);});
   canvas.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;theta-=dx*.006;phi=clamp(phi+dy*.004,.25,1.35);drag.x=e.clientX;drag.y=e.clientY;});
-  canvas.addEventListener("pointerup",e=>{if(drag&&!drag.moved){const r=canvas.getBoundingClientRect();pointer.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(tankObjects,true);let obj=hits.find(h=>h.object.parent&&h.object.parent.userData.tankIndex!==undefined)?.object;while(obj&&!obj.userData.tankIndex!==undefined&&obj.parent)obj=obj.parent;const hit=hits.find(h=>{let p=h.object;while(p&&p!==scene){if(p.userData.tankIndex!==undefined)return true;p=p.parent;}return false;});if(hit){let p=hit.object;while(p&&p.userData.tankIndex===undefined)p=p.parent;if(p)focusTank(p.userData.tankIndex);}}drag=null;});
+  canvas.addEventListener("pointerup",e=>{if(drag&&!drag.moved){const r=canvas.getBoundingClientRect();pointer.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(tankObjects,true);const hit=hits.find(h=>{let p=h.object;while(p&&p!==scene){if(p.userData.tankIndex!==undefined)return true;p=p.parent;}return false;});if(hit){let p=hit.object;while(p&&p.userData.tankIndex===undefined)p=p.parent;if(p)focusTank(p.userData.tankIndex);}}drag=null;});
   canvas.addEventListener("wheel",e=>{e.preventDefault();radius=clamp(radius+(e.deltaY>0?2:-2),15,75);},{passive:false});
   const day=$("farmTwinDayNight");if(day)day.addEventListener("click",()=>{state.night=!state.night;updateEnvironment();});
   const feed=$("farmTwinFeed");if(feed)feed.addEventListener("click",()=>{state.feeding=!state.feeding;state.feedUntil=Date.now()+25000;feed.textContent=state.feeding?"■ Stop feeding demo":"▶ Start feeding demo";metrics();});
