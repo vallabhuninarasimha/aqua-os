@@ -526,6 +526,61 @@ def seed_default_hardware_if_empty(session: Session, farm_id: str = "farm-alpha"
         session.commit()
 
 
+def seed_beta_farm_if_empty(session: Session) -> int:
+    """Seed Beta Intensive RAS Facility with 4 nursery tanks if absent."""
+    from apps.api.src.infrastructure.models import PondORM
+    from packages.telemetry_schema.config import PondConfig
+    from apps.api.src.infrastructure.repositories.sql_sensor_repository import SQLSensorRepository
+    from apps.api.src.infrastructure.repositories.sql_aerator_repository import SQLAeratorRepository
+    from apps.api.src.infrastructure.repositories.sql_pond_records_repository import SQLPondRecordsRepository
+
+    existing = session.query(PondORM).filter(PondORM.farm_id == "farm-beta").count()
+    if existing > 0:
+        return existing
+
+    beta_tanks = [
+        PondConfig(
+            farm_id="farm-beta",
+            pond_id=f"beta-tank-{i:02d}",
+            name=f"Beta RAS Tank 0{i}",
+            area_acres=0.25,
+            area_hectares=0.101,
+            depth_feet=5.0,
+            depth_meters=1.524,
+            species="Litopenaeus vannamei (Nursery)",
+            target_stocking_density=120.0,
+            stocking_count=80_000,
+            days_of_culture=18,
+            aerator_count=4,
+            transformer_id="tx-beta-1",
+        )
+        for i in range(1, 5)
+    ]
+    for tank in beta_tanks:
+        session.add(PondORM.from_domain(tank))
+    session.commit()
+
+    sensor_repo = SQLSensorRepository(session)
+    aerator_repo = SQLAeratorRepository(session)
+    records_repo = SQLPondRecordsRepository(session)
+
+    for tank in beta_tanks:
+        sensor_repo.seed_defaults_for_pond("farm-beta", tank.pond_id)
+        aerator_repo.seed_defaults_for_pond(
+            tank.pond_id,
+            transformer_id="tx-beta-1",
+            count=4,
+        )
+        records_repo.seed_default_stocking_for_pond(
+            "farm-beta",
+            tank.pond_id,
+            initial_count=80_000,
+            doc=18,
+            abw_g=4.2,
+        )
+    return len(beta_tanks)
+
+
 def seed_default_users_if_empty(session: Session) -> int:
     """Seed default local development accounts if users table is empty."""
     from apps.api.src.infrastructure.models import UserORM

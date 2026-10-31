@@ -17,6 +17,7 @@ from apps.api.src.config import settings
 from apps.api.src.infrastructure.database import (
     SessionLocal,
     init_db,
+    seed_beta_farm_if_empty,
     seed_default_hardware_if_empty,
     seed_default_ponds_if_empty,
     seed_default_users_if_empty,
@@ -50,6 +51,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     with SessionLocal() as session:
         seed_default_ponds_if_empty(session, farm_id=settings.default_farm_id)
         seed_default_hardware_if_empty(session, farm_id=settings.default_farm_id)
+        seed_beta_farm_if_empty(session)
         seed_default_users_if_empty(session)
 
     yield
