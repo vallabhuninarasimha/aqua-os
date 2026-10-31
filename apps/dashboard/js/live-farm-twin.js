@@ -129,7 +129,8 @@
     const light=new THREE.PointLight(0x38c8ed,.25,2.8);light.position.set(0,1.7,0);g.add(light);
     return {rotor,splash,light,group:g,droplets,index};
   }
-  // Compact 2x2 farm arrangement: all four tanks remain visible in overview mode.\n  const tankPositions=[[-7.8,-5.1],[7.8,-5.1],[-7.8,5.1],[7.8,5.1]];
+  // Compact 2x2 farm arrangement: all four tanks remain visible in overview mode.
+  const tankPositions=[[-7.8,-5.1],[7.8,-5.1],[-7.8,5.1],[7.8,5.1]];
   tanks.forEach((t,i)=>{
     const group=new THREE.Group();group.position.set(tankPositions[i][0],0,tankPositions[i][1]);scene.add(group);
     const w=13.2,d=7.2,h=1.35;
@@ -155,7 +156,14 @@
   const flowDots=[];
   for(let i=0;i<12;i++){const dot=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),new THREE.MeshBasicMaterial({color:0x9ceeff}));dot.position.set(0,.88,-9+i*.95);scene.add(dot);flowDots.push(dot);}
   raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();
-  function fitOverview(){\n    state.view="overview";state.selected=-1;tankObjects.forEach(g=>g.userData.selection.material.opacity=0);\n    controlsTarget.set(0,.6,0);camera.aspect=width()/height();camera.updateProjectionMatrix();\n    const vfov=THREE.MathUtils.degToRad(camera.fov),hfov=2*Math.atan(Math.tan(vfov/2)*camera.aspect);\n    const horizontal=29.5/(2*Math.tan(hfov/2)),vertical=18.5/(2*Math.tan(vfov/2));\n    radius=Math.max(horizontal,vertical)*1.18;theta=0;phi=.78;camera.position.set(0,radius*Math.cos(phi),radius*Math.sin(phi));camera.lookAt(controlsTarget);\n  }\n  function focusTank(index){state.view="single";state.selected=index;tankObjects.forEach((g,i)=>g.userData.selection.material.opacity=i===index?.75:0);const p=tankObjects[index].position;controlsTarget.set(p.x,.7,p.z);theta=.0;phi=.76;radius=18;camera.position.set(p.x+2,radius*Math.cos(phi),p.z+radius*Math.sin(phi));camera.lookAt(controlsTarget);metrics();}
+  function fitOverview(){
+    state.view="overview";state.selected=-1;tankObjects.forEach(g=>g.userData.selection.material.opacity=0);
+    controlsTarget.set(0,.6,0);camera.aspect=width()/height();camera.updateProjectionMatrix();
+    const vfov=THREE.MathUtils.degToRad(camera.fov),hfov=2*Math.atan(Math.tan(vfov/2)*camera.aspect);
+    const horizontal=29.5/(2*Math.tan(hfov/2)),vertical=18.5/(2*Math.tan(vfov/2));
+    radius=Math.max(horizontal,vertical)*1.18;theta=0;phi=.78;camera.position.set(0,radius*Math.cos(phi),radius*Math.sin(phi));camera.lookAt(controlsTarget);
+  }
+  function focusTank(index){state.view="single";state.selected=index;tankObjects.forEach((g,i)=>g.userData.selection.material.opacity=i===index?.75:0);const p=tankObjects[index].position;controlsTarget.set(p.x,.7,p.z);theta=.0;phi=.76;radius=18;camera.position.set(p.x+2,radius*Math.cos(phi),p.z+radius*Math.sin(phi));camera.lookAt(controlsTarget);metrics();}
   function metrics(){
     const t=tanks[state.selected],name=$("farmTwinSelectedName"),status=$("farmTwinSelectedStatus"),box=$("farmTwinMetrics"),eq=$("farmTwinEquipment"),assets=$("farmTwinAssetList");
     if(name)name.textContent=t.name;
