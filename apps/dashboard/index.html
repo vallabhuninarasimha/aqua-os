@@ -83,6 +83,10 @@
           <span class="nav-link-text">Overview</span>
         </a>
 
+        <a href="#live-farm" class="nav-link" data-section="live-farm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 20V9l7-6 7 6v11M9 20v-6h6v6"/></svg>
+          <span class="nav-link-text">Live Farm View</span>
+        </a>
         <a href="#ponds" class="nav-link" data-section="ponds">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 6h16M4 12h16M4 18h16"/>
@@ -847,6 +851,46 @@
 
       <!-- Secondary Navigation Section Pages (Ponds, Analytics, Automation, Alerts, Feeding, Water, Health, Reports, Settings) -->
       
+      <!-- Live Farm Digital Twin: visual simulation only until hardware is commissioned -->
+      <section id="live-farm" class="section-page live-farm-page">
+        <div class="section-page-heading live-farm-heading">
+          <div>
+            <h1>Live Farm View</h1>
+            <p>Interactive digital twin of the reservoir and four active tanks.</p>
+          </div>
+          <div class="live-farm-mode"><span class="live-farm-mode-dot"></span> SIMULATION MODE · NOT HARDWARE TELEMETRY</div>
+        </div>
+        <div class="live-farm-toolbar">
+          <div class="live-farm-toolbar-copy"><strong id="farmTwinClock">--:--:--</strong><span id="farmTwinEnvironment">Daylight conditions</span></div>
+          <div class="live-farm-actions">
+            <button type="button" class="live-farm-action" id="farmTwinDayNight">Toggle day / night</button>
+            <button type="button" class="live-farm-action" id="farmTwinFeed">▶ Start feeding demo</button>
+            <button type="button" class="live-farm-action live-farm-action-primary" id="farmTwinReset">Reset simulation</button>
+          </div>
+        </div>
+        <div class="live-farm-stage">
+          <canvas id="aquaFarmTwinCanvas" aria-label="Animated digital twin showing the reservoir, four shrimp tanks, water movement and four aerators per tank"></canvas>
+          <div class="live-farm-canvas-hint">Drag to orbit · Scroll to zoom · Select a tank for details</div>
+          <div class="live-farm-stage-legend">
+            <span><i class="legend-water"></i> Water surface</span>
+            <span><i class="legend-rotor"></i> Aerator running</span>
+            <span><i class="legend-flow"></i> Water circulation</span>
+          </div>
+        </div>
+        <div class="live-farm-bottom">
+          <div class="live-farm-selected panel">
+            <div class="live-farm-selected-head"><div><span class="live-farm-eyebrow">SELECTED ASSET</span><h2 id="farmTwinSelectedName">Tank 01</h2></div><span class="live-farm-status" id="farmTwinSelectedStatus">NORMAL · SIMULATED</span></div>
+            <div class="live-farm-metrics" id="farmTwinMetrics"></div>
+            <div class="live-farm-equipment" id="farmTwinEquipment"></div>
+          </div>
+          <div class="live-farm-tank-picker panel">
+            <span class="live-farm-eyebrow">FARM ASSETS</span>
+            <div id="farmTwinAssetList"></div>
+            <p>Each tank is represented with four independently animated aerators. Controls here affect the visual simulator only.</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Ponds Page -->
       <section id="ponds" class="section-page">
         <div class="section-page-heading">
@@ -990,5 +1034,6 @@
 
   <!-- Main JavaScript Bundle -->
   <script src="/static/js/dashboard.js?v=20261030-final"></script>
+  <script src="/static/js/live-farm-twin.js?v=20261031-1"></script>
 </body>
 </html>
