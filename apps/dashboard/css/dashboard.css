@@ -3175,3 +3175,23 @@ input, select {
 .live-farm-tank-picker p { color:#789da6;font-size:9px;line-height:1.5;margin:12px 0 0; }
 @media(max-width:900px) { .live-farm-bottom { grid-template-columns:1fr; }.live-farm-stage { height:520px; }.live-farm-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:600px) { .live-farm-heading,.live-farm-toolbar { align-items:flex-start;flex-direction:column; }.live-farm-toolbar-copy { flex-direction:column;gap:3px; }.live-farm-stage { min-height:420px;height:62vh; }.live-farm-stage-legend { left:12px;right:12px;top:auto;bottom:12px;justify-content:flex-start; }.live-farm-actions { width:100%; }.live-farm-action { flex:1; } }
+
+/* Role workspaces: only the selected role's primary experience is visible. */
+#dashboard[data-info-mode="farmer"] > :not(#farmerModeContainer),
+#dashboard[data-info-mode="tech"] > :not(#technicalModeContainer) { display:none !important; }
+#dashboard[data-info-mode="manager"] > #farmerModeContainer,
+#dashboard[data-info-mode="manager"] > #technicalModeContainer { display:none !important; }
+.technical-mode-container { display:flex; flex-direction:column; gap:18px; padding:8px 2px 24px; }
+.role-workspace-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:22px; border:1px solid var(--border-card); border-radius:14px; background:linear-gradient(120deg,rgba(13,40,57,.98),rgba(8,23,36,.96)); }
+.role-workspace-heading h1 { margin:7px 0 5px; color:#effaff; font-size:25px; }
+.role-workspace-heading p { margin:0; color:var(--text-muted); }
+.role-eyebrow { color:#58cbd1; font-size:10px; font-weight:800; letter-spacing:.14em; }
+.role-simulation-badge { white-space:nowrap; border:1px solid rgba(245,158,11,.35); border-radius:999px; padding:8px 11px; color:#f4c76d; background:rgba(245,158,11,.08); font-size:10px; font-weight:800; }
+.technical-status-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.technical-status-card,.technical-panel { border:1px solid var(--border-card); border-radius:12px; background:var(--panel-bg,rgba(10,28,42,.9)); padding:18px; }
+.technical-status-card span,.technical-status-card small { display:block; color:var(--text-muted); }
+.technical-status-card strong { display:block; margin:12px 0 6px; color:#f0f8fb; font-size:18px; }
+.technical-panel h2 { margin:7px 0 12px; color:#effaff; font-size:18px; }
+.technical-panel ul { margin:0; padding-left:20px; color:var(--text-muted); line-height:2; }
+@media(max-width:900px) { .technical-status-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .role-workspace-heading { flex-direction:column; } }
+@media(max-width:520px) { .technical-status-grid { grid-template-columns:1fr; } }
