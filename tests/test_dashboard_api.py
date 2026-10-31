@@ -99,7 +99,8 @@ def test_simulator_scenario_injection_and_reset():
 def test_dashboard_stream_token_query_param_auth():
     """Verify SSE streaming endpoint accepts token in query parameter for browser EventSource."""
     # 1. Unauthenticated request must be rejected with 401
-    unauth_resp = client.get(f"{settings.api_prefix}/dashboard/stream")
+    client.cookies.clear()
+    unauth_resp = client.get(f"{settings.api_prefix}/dashboard/stream?max_events=1")
     assert unauth_resp.status_code == 401
 
     # 2. Authenticated with token query param must be accepted
@@ -114,5 +115,9 @@ def test_dashboard_stream_token_query_param_auth():
     ) as stream:
         assert stream.status_code == 200
         assert "text/event-stream" in stream.headers["content-type"]
-        lines = list(stream.iter_lines())
-        assert any("connected" in line for line in lines)
+        found_connected = False
+        for line in stream.iter_lines():
+            if "connected" in line:
+                found_connected = True
+                break
+        assert found_connected

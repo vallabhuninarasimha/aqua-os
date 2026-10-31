@@ -161,6 +161,8 @@ def calculate_feed_ration(
     is_sample_stale = False
     now_utc = datetime.now(timezone.utc)
     if abw_sample_date:
+        if isinstance(abw_sample_date, str):
+            abw_sample_date = datetime.fromisoformat(abw_sample_date.replace("Z", "+00:00"))
         if abw_sample_date.tzinfo is None:
             abw_sample_date = abw_sample_date.replace(tzinfo=timezone.utc)
         days_since_sample = (now_utc - abw_sample_date).total_seconds() / 86400.0

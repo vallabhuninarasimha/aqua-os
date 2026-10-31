@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from apps.api.src.dependencies import get_db_session
@@ -24,6 +24,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/login", response_model=TokenResponse)
 async def login(
     request: Request,
+    response: Response,
     credentials: LoginRequest,
     session: Session = Depends(get_db_session),
     idp: IIdentityProvider = Depends(get_identity_provider),
@@ -58,11 +59,21 @@ async def login(
         resource_type="auth",
         ip_address=client_ip,
     )
+    response.set_cookie(
+        key="aqua_token",
+        value=token_resp.access_token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=token_resp.expires_in_seconds,
+        path="/",
+    )
     return token_resp
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
+    response: Response,
     authorization: Optional[str] = Header(None),
     current_user: UserIdentity = Depends(get_current_user),
     session: Session = Depends(get_db_session),
@@ -80,6 +91,7 @@ async def logout(
         action="LOGOUT",
         resource_type="auth",
     )
+    response.delete_cookie(key="aqua_token", path="/")
     return {"message": "Token successfully revoked."}
 
 

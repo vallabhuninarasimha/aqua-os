@@ -1,7 +1,88 @@
 /**
  * Aqua OS - API Client & Resilient Real-Time SSE Streamer
  * Handles JWT credentials in sessionStorage, REST requests, and reconnecting SSE streams.
+ * Includes native IndexedDB offline mutation queue (aqua_offline_queue) for sovereign edge resilience.
  */
+
+class AquaOfflineQueue {
+  constructor() {
+    this.dbName = "AquaOS_OfflineDB";
+    this.storeName = "aqua_offline_queue";
+    this.db = null;
+    this.initPromise = this.init();
+  }
+
+  async init() {
+    if (typeof window === "undefined" || !window.indexedDB) return null;
+    return new Promise((resolve) => {
+      const req = indexedDB.open(this.dbName, 1);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          db.createObjectStore(this.storeName, { keyPath: "id", autoIncrement: true });
+        }
+      };
+      req.onsuccess = (e) => {
+        this.db = e.target.result;
+        resolve(this.db);
+      };
+      req.onerror = () => resolve(null);
+    });
+  }
+
+  async enqueue(item) {
+    await this.initPromise;
+    if (!this.db) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(this.storeName, "readwrite");
+        const store = tx.objectStore(this.storeName);
+        const req = store.add(item);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  async getAll() {
+    await this.initPromise;
+    if (!this.db) return [];
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(this.storeName, "readonly");
+        const store = tx.objectStore(this.storeName);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      } catch {
+        resolve([]);
+      }
+    });
+  }
+
+  async remove(id) {
+    await this.initPromise;
+    if (!this.db) return;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(this.storeName, "readwrite");
+        const store = tx.objectStore(this.storeName);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+
+  async count() {
+    const all = await this.getAll();
+    return all.length;
+  }
+}
 
 class AquaAPIClient {
   constructor(baseUrl = "") {
@@ -13,7 +94,102 @@ class AquaAPIClient {
     this.maxReconnectDelay = 10000;
     this.reconnectTimer = null;
     this.isExplicitDisconnect = false;
+    this.offlineQueue = new AquaOfflineQueue();
+    this.setupOfflineListeners();
   }
+
+  setupOfflineListeners() {
+    if (typeof window === "undefined") return;
+    window.addEventListener("online", () => {
+      this.notifyOfflineQueueChange();
+      this.replayOfflineQueue();
+    });
+    window.addEventListener("offline", () => {
+      this.notifyOfflineQueueChange();
+    });
+    setTimeout(() => this.notifyOfflineQueueChange(), 500);
+  }
+
+  async notifyOfflineQueueChange() {
+    if (typeof document === "undefined") return;
+    const count = await this.offlineQueue.count();
+    const banner = document.getElementById("offlineSyncBanner");
+    const text = document.getElementById("offlineSyncText");
+    if (!banner) return;
+    if (count > 0 || (typeof navigator !== "undefined" && !navigator.onLine)) {
+      banner.hidden = false;
+      banner.style.display = "flex";
+      if (text) {
+        text.textContent = (typeof navigator !== "undefined" && !navigator.onLine)
+          ? `⚡ Offline Sovereign Mode: ${count} pending mutations queued for sync`
+          : `🔄 Syncing: ${count} offline mutations remaining...`;
+      }
+    } else {
+      banner.hidden = true;
+      banner.style.display = "none";
+    }
+  }
+
+  async replayOfflineQueue() {
+    const items = await this.offlineQueue.getAll();
+    if (!items || items.length === 0) return;
+    const MAX_ACTUATOR_TTL_MS = 5 * 60 * 1000; // 5-minute safety TTL
+    const HAZARDOUS_ACTUATOR_ROUTES = ["/edge/commands", "/aeration", "/actuators"];
+
+    for (const item of items) {
+      try {
+        const isActuator = item.isActuatorCommand || HAZARDOUS_ACTUATOR_ROUTES.some((r) => (item.endpoint || "").includes(r));
+        if (isActuator) {
+          const itemTime = new Date(item.timestamp || item.clientTimestamp || 0).getTime();
+          const ageMs = Date.now() - itemTime;
+          if (ageMs > MAX_ACTUATOR_TTL_MS) {
+            console.warn(`[AquaOfflineQueue] Discarding expired actuator command for ${item.endpoint}. Queued ${Math.round(ageMs / 60000)}m ago.`);
+            await this.offlineQueue.remove(item.id);
+            if (typeof window !== "undefined" && typeof window.showToast === "function") {
+              window.showToast(`⚠️ Stale offline command discarded: Aerator command expired after ${Math.round(ageMs / 60000)}m offline. Biological re-evaluation required.`, "warning");
+            }
+            continue;
+          }
+        }
+
+        const headers = { "Content-Type": "application/json" };
+        if (item.token || this.token) {
+          headers["Authorization"] = `Bearer ${item.token || this.token}`;
+        }
+        if (item.idempotencyKey) {
+          headers["X-Idempotency-Key"] = item.idempotencyKey;
+        }
+
+        const res = await fetch(`${this.baseUrl}${item.endpoint}`, {
+          method: item.method,
+          headers,
+          body: item.body,
+        });
+
+        if (res.ok || (res.status >= 200 && res.status < 500)) {
+          await this.offlineQueue.remove(item.id);
+          if (res.status === 409) {
+            console.warn(`[AquaOfflineQueue] Conflict encountered on offline replay: ${item.endpoint}`);
+            if (typeof window !== "undefined" && typeof window.showToast === "function") {
+              window.showToast(`⚠️ Offline sync conflict on ${item.endpoint}: Resource state modified while offline.`, "warning");
+            }
+          }
+        }
+      } catch (err) {
+        break;
+      }
+    }
+    this.notifyOfflineQueueChange();
+  }
+
+  async getOfflineQueue() {
+    return this.offlineQueue.getAll();
+  }
+
+  async syncOfflineQueue() {
+    return this.replayOfflineQueue();
+  }
+
 
   setSession(token, user) {
     this.token = token;
@@ -48,16 +224,60 @@ class AquaAPIClient {
       options
     );
 
-    const res = await fetch(url, opts);
-    if (res.status === 401) {
-      this.setSession(null, null);
-      throw new Error("UNAUTHORIZED");
+    const isWrite = opts.method && opts.method.toUpperCase() !== "GET";
+    if (typeof navigator !== "undefined" && !navigator.onLine && isWrite) {
+      const isActuator = ["/edge/commands", "/aeration", "/actuators"].some((r) => endpoint.includes(r));
+      const idempKey = `aqua-off-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
+      await this.offlineQueue.enqueue({
+        endpoint,
+        method: opts.method,
+        body: opts.body,
+        timestamp: new Date().toISOString(),
+        token: this.token,
+        isActuatorCommand: isActuator,
+        idempotencyKey: idempKey,
+      });
+      this.notifyOfflineQueueChange();
+      return {
+        status: "QUEUED_OFFLINE",
+        offline: true,
+        message: "Network offline: Mutation queued for automatic background sync upon reconnection.",
+      };
     }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || `Request failed with HTTP ${res.status}`);
+
+    try {
+      const res = await fetch(url, opts);
+      if (res.status === 401) {
+        this.setSession(null, null);
+        throw new Error("UNAUTHORIZED");
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || `Request failed with HTTP ${res.status}`);
+      }
+      return res.json();
+    } catch (err) {
+      if (isWrite && (err.name === "TypeError" || err.message.includes("fetch") || err.message.includes("NetworkError"))) {
+        const isActuator = ["/edge/commands", "/aeration", "/actuators"].some((r) => endpoint.includes(r));
+        const idempKey = `aqua-off-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
+        await this.offlineQueue.enqueue({
+          endpoint,
+          method: opts.method,
+          body: opts.body,
+          timestamp: new Date().toISOString(),
+          token: this.token,
+          isActuatorCommand: isActuator,
+          idempotencyKey: idempKey,
+        });
+        this.notifyOfflineQueueChange();
+        return {
+          status: "QUEUED_OFFLINE",
+          offline: true,
+          message: "Network unavailable: Mutation queued for automatic background sync upon reconnection.",
+        };
+      }
+      throw err;
     }
-    return res.json();
   }
 
   async login(username, password) {
@@ -173,6 +393,50 @@ class AquaAPIClient {
       method: "POST",
       body: JSON.stringify({ offset: parseFloat(offset), slope: parseFloat(slope) }),
     });
+  }
+
+  async listAllSensors(farmId = "farm-alpha", pondId = null, sensorType = null) {
+    let url = `/api/v1/sensors?farm_id=${encodeURIComponent(farmId)}`;
+    if (pondId) url += `&pond_id=${encodeURIComponent(pondId)}`;
+    if (sensorType) url += `&sensor_type=${encodeURIComponent(sensorType)}`;
+    return this.request(url);
+  }
+
+  async getSensorDetail(sensorId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/sensors/${encodeURIComponent(sensorId)}?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async registerSensor(sensorData) {
+    return this.request("/api/v1/sensors", {
+      method: "POST",
+      body: JSON.stringify(sensorData),
+    });
+  }
+
+  async calibrateSensorAdvanced(sensorId, calData) {
+    return this.request(`/api/v1/sensors/${encodeURIComponent(sensorId)}/calibration`, {
+      method: "POST",
+      body: JSON.stringify(calData),
+    });
+  }
+
+  async getSensorCalibrationHistory(sensorId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/sensors/${encodeURIComponent(sensorId)}/calibration/history?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async recordSensorMaintenance(sensorId, maintData) {
+    return this.request(`/api/v1/sensors/${encodeURIComponent(sensorId)}/maintenance`, {
+      method: "POST",
+      body: JSON.stringify(maintData),
+    });
+  }
+
+  async getSensorMaintenanceHistory(sensorId, farmId = "farm-alpha") {
+    return this.request(`/api/v1/sensors/${encodeURIComponent(sensorId)}/maintenance/history?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async getSensorWatchdogStatus(farmId = "farm-alpha") {
+    return this.request(`/api/v1/sensors/watchdog/status?farm_id=${encodeURIComponent(farmId)}`);
   }
 
   async getPondAeration(pondId, farmId = "farm-alpha") {
@@ -746,7 +1010,66 @@ class AquaAPIClient {
       if (callbacks.onStateChange) callbacks.onStateChange("DISCONNECTED");
     }
   }
+
+
+  // Agent, Ponds & Edge Additional Endpoints
+  async queryAgent(question, conversationId = null, farmId = "farm-alpha") {
+    return this.request("/api/v1/agent/query", {
+      method: "POST",
+      body: JSON.stringify({ question, conversation_id: conversationId, farm_id: farmId }),
+    });
+  }
+
+  async getAgentConversations(farmId = "farm-alpha") {
+    return this.request(`/api/v1/agent/conversations?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async getAgentDecisions(farmId = "farm-alpha", status = null) {
+    let url = `/api/v1/agent/decisions?farm_id=${encodeURIComponent(farmId)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    return this.request(url);
+  }
+
+  async reviewAgentDecision(decisionId, decision, note = "", farmId = "farm-alpha") {
+    return this.request(`/api/v1/agent/decisions/${encodeURIComponent(decisionId)}/review`, {
+      method: "POST",
+      body: JSON.stringify({ farm_id: farmId, decision, note }),
+    });
+  }
+
+  async recordDecisionOutcome(decisionId, resolutionStatus = "RESOLVED", notes = "", farmId = "farm-alpha") {
+    return this.request(`/api/v1/agent/decisions/${encodeURIComponent(decisionId)}/outcome`, {
+      method: "POST",
+      body: JSON.stringify({ farm_id: farmId, resolution_status: resolutionStatus, notes }),
+    });
+  }
+
+  async listPonds(farmId = "farm-alpha") {
+    return this.request(`/api/v1/ponds?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async registerPond(pondData) {
+    return this.request("/api/v1/ponds", {
+      method: "POST",
+      body: JSON.stringify(pondData),
+    });
+  }
+
+  async getEdgeStatus(farmId = "farm-alpha") {
+    return this.request(`/api/v1/edge/status?farm_id=${encodeURIComponent(farmId)}`);
+  }
+
+  async getEdgeCommands(farmId = "farm-alpha", limit = 50) {
+    return this.request(`/api/v1/edge/commands?farm_id=${encodeURIComponent(farmId)}&limit=${limit}`);
+  }
+
+  async getEdgeActuatorProfiles(farmId = "farm-alpha") {
+    return this.request(`/api/v1/edge/actuator-simulation-profiles?farm_id=${encodeURIComponent(farmId)}`);
+  }
 }
 
 const api = new AquaAPIClient();
-
+if (typeof window !== "undefined") {
+  window.AquaAPIClient = AquaAPIClient;
+  window.api = api;
+}

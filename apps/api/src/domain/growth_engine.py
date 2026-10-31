@@ -79,6 +79,10 @@ def calculate_dynamic_doc(stocking_date: datetime, as_of_date: Optional[datetime
     DOC is 1 on the day of stocking, increasing by 1 for each elapsed calendar day.
     """
     now = as_of_date or datetime.now(timezone.utc)
+    if isinstance(stocking_date, str):
+        stocking_date = datetime.fromisoformat(stocking_date.replace("Z", "+00:00"))
+    if isinstance(now, str):
+        now = datetime.fromisoformat(now.replace("Z", "+00:00"))
     if stocking_date.tzinfo is None:
         stocking_date = stocking_date.replace(tzinfo=timezone.utc)
     if now.tzinfo is None:

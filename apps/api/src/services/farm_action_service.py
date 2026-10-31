@@ -59,7 +59,7 @@ class FarmActionDecisionService:
         self.growth_service = GrowthProductionService(session)
         self.health_service = HealthService(session)
         self.power_service = PowerMonitoringService(session)
-        self.water_service = WaterManagementService(self.water_repo, self.pond_repo)
+        self.water_service = WaterManagementService(session=session, water_repo=self.water_repo)
 
     def generate_farm_actions(
         self,
@@ -76,7 +76,7 @@ class FarmActionDecisionService:
 
         # 1. Fetch authorized ponds
         try:
-            ponds = self.pond_repo.list_by_farm(farm_id)
+            ponds = self.pond_repo.list(farm_id=farm_id) if hasattr(self.pond_repo, "list") else self.pond_repo.list_by_farm(farm_id)
         except Exception as e:
             logger.error("Failed to list ponds for farm %s: %s", farm_id, e)
             return FarmActionsResponse(
@@ -188,8 +188,8 @@ class FarmActionDecisionService:
 
         # 4. River Intake Pump Evaluation (Farm-Wide)
         try:
-            pump = self.water_service.get_intake_pump(farm_id)
-            if pump and (not pump.transformer_id or (pump.rating_kw or 0.0) <= 0.0):
+            pump = self.water_service.get_pump_info(farm_id)
+            if pump and (not pump.get("transformer_id") or (pump.get("rating_kw") or 0.0) <= 0.0):
                 sev = ActionSeverity.WARNING.value
                 actions.append(
                     FarmActionItem(
@@ -203,10 +203,10 @@ class FarmActionDecisionService:
                         title="River Intake Pump: Electrical Configuration Incomplete",
                         reason="Intake pump electrical nameplate kW rating or assigned transformer feeder is unconfigured.",
                         supporting_evidence={
-                            "pump_id": pump.pump_id,
-                            "transformer_id": pump.transformer_id,
-                            "rating_kw": pump.rating_kw,
-                            "physical_state": pump.physical_state.value if pump.physical_state else "UNKNOWN",
+                            "pump_id": pump.get("pump_id"),
+                            "transformer_id": pump.get("transformer_id"),
+                            "rating_kw": pump.get("rating_kw"),
+                            "physical_state": pump.get("physical_state", "UNKNOWN"),
                         },
                         confidence="UNCONFIGURED",
                         confidence_tooltip=CONFIDENCE_EXPLANATIONS["UNCONFIGURED"],
@@ -230,7 +230,7 @@ class FarmActionDecisionService:
 
             # A. Telemetry & Sensor Availability
             try:
-                record = self.telemetry_repo.get_latest_packet(p_id)
+                record = self.telemetry_repo.get_latest(farm_id, p_id)
                 if not record:
                     sev = ActionSeverity.CRITICAL.value
                     actions.append(

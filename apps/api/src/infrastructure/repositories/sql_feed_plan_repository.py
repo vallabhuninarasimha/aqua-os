@@ -188,10 +188,14 @@ class SQLFeedPlanRepository:
         if status:
             query = query.filter(FeedPlanORM.status == status.upper())
         if date_from:
+            if isinstance(date_from, str):
+                date_from = datetime.fromisoformat(date_from.replace("Z", "+00:00"))
             if date_from.tzinfo is None:
                 date_from = date_from.replace(tzinfo=timezone.utc)
             query = query.filter(FeedPlanORM.plan_date >= date_from)
         if date_to:
+            if isinstance(date_to, str):
+                date_to = datetime.fromisoformat(date_to.replace("Z", "+00:00"))
             if date_to.tzinfo is None:
                 date_to = date_to.replace(tzinfo=timezone.utc)
             query = query.filter(FeedPlanORM.plan_date <= date_to)

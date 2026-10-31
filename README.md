@@ -101,13 +101,13 @@ docker compose -f docker/docker-compose.yml up -d
 
 Start the backend API server and local monitoring dashboard with auto-reload:
 ```bash
-python -m uvicorn apps.api.src.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn apps.api.src.main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 Access points:
-- **Local Realtime Dashboard:** `http://localhost:8000/` (100% offline-first, zero external CDNs)
-- **Interactive Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc Documentation:** `http://localhost:8000/redoc`
+- **Local Realtime Dashboard:** `http://localhost:8001/` (100% offline-first, zero external CDNs)
+- **Interactive Swagger UI:** `http://localhost:8001/docs`
+- **ReDoc Documentation:** `http://localhost:8001/redoc`
 
 Default development seed credentials:
 | Username | Password | Role | Farm |
@@ -121,7 +121,7 @@ Default development seed credentials:
 
 ### 4. Operating the Realtime Farm Dashboard
 
-1. Navigate to `http://localhost:8000/` in your browser.
+1. Navigate to `http://localhost:8001/` in your browser.
 2. Sign in using the quick-login buttons (e.g. **Operator**).
 3. In the header control bar:
    - Click **`▶ Start Sim (3s)`** to start the embedded background simulation feed.

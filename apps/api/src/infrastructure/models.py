@@ -335,7 +335,49 @@ class SensorRegistryORM(Base):
     is_simulated = Column(Boolean, nullable=False, default=False)
     status = Column(String(32), nullable=False, default="ONLINE")
     last_reading_at = Column(DateTime(timezone=True), nullable=True)
+    manufacturer = Column(String(64), nullable=True, default="AquaSensors Ltd")
+    model = Column(String(64), nullable=True, default="AQ-PROBE-485")
+    serial_number = Column(String(64), nullable=True)
+    calibration_expiry = Column(DateTime(timezone=True), nullable=True)
+    health_status = Column(String(32), nullable=False, default="HEALTHY")
+    battery_level_pct = Column(Float, nullable=True, default=100.0)
+    last_communication_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class SensorCalibrationHistoryORM(Base):
+    """Historical ledger of sensor calibration runs, reference standards, and expiration dates."""
+
+    __tablename__ = "sensor_calibration_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    pond_id = Column(String(64), nullable=False, index=True)
+    sensor_id = Column(String(64), nullable=False, index=True)
+    calibration_type = Column(String(32), nullable=False, default="TWO_POINT")
+    pre_calibration_value = Column(Float, nullable=False)
+    reference_value = Column(Float, nullable=False)
+    post_calibration_value = Column(Float, nullable=False)
+    calibration_offset = Column(Float, nullable=False, default=0.0)
+    calibration_slope = Column(Float, nullable=False, default=1.0)
+    technician_id = Column(String(64), nullable=False)
+    notes = Column(Text, nullable=True)
+    valid_until = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class SensorMaintenanceLogORM(Base):
+    """Maintenance events for probe cleaning, electrolyte refill, membrane replacement."""
+
+    __tablename__ = "sensor_maintenance_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    farm_id = Column(String(64), nullable=False, index=True)
+    sensor_id = Column(String(64), nullable=False, index=True)
+    maintenance_type = Column(String(64), nullable=False)
+    performed_by = Column(String(64), nullable=False)
+    details = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
 
 class AeratorUnitORM(Base):

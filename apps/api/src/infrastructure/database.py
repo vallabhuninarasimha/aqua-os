@@ -125,6 +125,13 @@ def _ensure_table_columns(eng) -> None:
                     ("calibration_offset", "FLOAT DEFAULT 0.0"),
                     ("calibration_slope", "FLOAT DEFAULT 1.0"),
                     ("is_active", "BOOLEAN DEFAULT 1"),
+                    ("manufacturer", "VARCHAR(64) DEFAULT 'AquaSensors Ltd'"),
+                    ("model", "VARCHAR(64) DEFAULT 'AQ-PROBE-485'"),
+                    ("serial_number", "VARCHAR(64)"),
+                    ("calibration_expiry", "TIMESTAMP"),
+                    ("health_status", "VARCHAR(32) DEFAULT 'HEALTHY'"),
+                    ("battery_level_pct", "FLOAT DEFAULT 100.0"),
+                    ("last_communication_at", "TIMESTAMP"),
                 ]
                 for col_name, col_type in sensor_cols_to_add:
                     if col_name not in existing_sensor_cols:

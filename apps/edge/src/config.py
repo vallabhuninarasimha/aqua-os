@@ -32,7 +32,7 @@ class EdgeSettings(BaseSettings):
     max_retries_per_item: int = 10
 
     # Remote platform API connectivity
-    api_url: Optional[str] = "http://localhost:8000/api/v1"
+    api_url: Optional[str] = "http://localhost:8001/api/v1"
     api_token: Optional[str] = None
 
 

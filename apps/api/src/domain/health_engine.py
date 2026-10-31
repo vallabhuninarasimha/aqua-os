@@ -77,6 +77,10 @@ def calculate_withdrawal_status(
 ) -> Dict[str, Any]:
     """Calculate harvest restriction window for a medicinal or chemical treatment."""
     now = current_time or datetime.now(timezone.utc)
+    if isinstance(application_time, str):
+        application_time = datetime.fromisoformat(application_time.replace("Z", "+00:00"))
+    if isinstance(now, str):
+        now = datetime.fromisoformat(now.replace("Z", "+00:00"))
     if application_time.tzinfo is None:
         application_time = application_time.replace(tzinfo=timezone.utc)
     if now.tzinfo is None:

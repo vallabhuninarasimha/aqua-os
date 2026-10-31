@@ -30,6 +30,12 @@ class SQLPondRepository(IPondRepository):
         records = query.order_by(PondORM.pond_id).all()
         return [r.to_domain() for r in records]
 
+    def list_by_farm(self, farm_id: str) -> List[PondConfig]:
+        return self.list(farm_id=farm_id)
+
+    def get_by_id(self, farm_id: str, pond_id: str) -> Optional[PondConfig]:
+        return self.get(farm_id=farm_id, pond_id=pond_id)
+
     def save(self, pond: PondConfig) -> PondConfig:
         existing = (
             self._session.query(PondORM)

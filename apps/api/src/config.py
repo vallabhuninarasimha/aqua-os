@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     app_name: str = "Aqua OS API"
     environment: str = "development"
     debug: bool = False
+    port: int = 8001
     api_prefix: str = "/api/v1"
 
     # Default Farm ID
@@ -40,7 +41,10 @@ class Settings(BaseSettings):
         default_factory=lambda: [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "http://localhost:8001",
+            "http://127.0.0.1:8001",
             "http://localhost:8000",
+            "http://127.0.0.1:8000",
         ],
         description="Allowed CORS origins for dashboard/PWA clients",
     )

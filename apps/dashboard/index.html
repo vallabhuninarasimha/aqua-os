@@ -9,7 +9,8 @@
 </head>
 <body>
 
-  <!-- Login Gate Modal -->
+  <!-- Login Gate Modal (Disabled per user request - will re-enable once complete) -->
+  <!--
   <div id="loginGate" class="modal-backdrop" hidden>
     <div class="login-card-box">
       <div class="login-brand-icon">
@@ -34,6 +35,7 @@
       </form>
     </div>
   </div>
+  -->
 
   <!-- Pond Detail Modal Dialog -->
   <div id="pondDetailModal" class="modal-backdrop" hidden>
@@ -51,6 +53,29 @@
       </div>
       <div class="detail-modal-body" id="detailModalBody">
         <p>Loading live telemetry and pond details...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic Action Modal Dialog -->
+  <div id="actionModal" class="modal-backdrop" hidden>
+    <div class="detail-modal-box" style="max-width: 580px;">
+      <div class="detail-modal-header">
+        <div class="panel-title-text" id="actionModalTitle">
+          <span id="actionModalTitleText">Record Action</span>
+        </div>
+        <button id="closeActionModal" class="close-btn" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="detail-modal-body">
+        <form id="actionModalForm" style="display: flex; flex-direction: column; gap: 12px;">
+          <div id="actionModalBodyContent">
+            <!-- Dynamically populated fields -->
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <button type="button" class="btn-secondary-dark" id="btnCancelActionModal">Cancel</button>
+            <button type="submit" class="btn-primary-blue" id="btnSubmitActionModal">Save &amp; Submit</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -164,7 +189,14 @@
           <span class="nav-badge" id="navAlertCount">2</span>
         </a>
 
-        <a href="#reports" class="nav-link" data-section="reports">
+                <a href="#finance" class="nav-link" data-section="finance">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <span class="nav-link-text">Farm Finance</span>
+        </a>
+<a href="#reports" class="nav-link" data-section="reports">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
@@ -228,6 +260,13 @@
           <input type="text" id="globalSearchInput" class="search-input" placeholder="Search ponds, sensors, alerts, reports..." aria-label="Search">
         </div>
 
+        <!-- Information Level Mode Selector (Manager, Farmer, Technical) -->
+        <div class="info-mode-selector" id="infoModeSelector" role="group" aria-label="Information Level Mode">
+          <button class="mode-pill active" data-mode="manager" title="Farm Manager Operational Mode">📊 Manager</button>
+          <button class="mode-pill" data-mode="farmer" title="రైతు మోడ్ - Simple Telugu/English Farmer Interface">🌾 రైతు (Farmer)</button>
+          <button class="mode-pill" data-mode="tech" title="Engineering & Hardware Diagnostics Mode">⚙️ Technical</button>
+        </div>
+
         <div class="topbar-actions">
           <!-- Critical Alerts Badge -->
           <div class="header-badge header-badge-critical" id="criticalBadge">
@@ -269,8 +308,55 @@
         </div>
       </header>
 
+      <!-- Offline Sovereign Resilience Banner -->
+      <div id="offlineSyncBanner" class="offline-sync-banner" hidden>
+        <div class="offline-banner-content">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span id="offlineSyncText">⚡ Offline Sovereign Mode: 0 pending mutations queued for background sync</span>
+          <button id="btnForceSyncOffline" class="btn-offline-sync" title="Sync pending mutations">Sync Now</button>
+        </div>
+      </div>
+
       <!-- Main Overview Dashboard Section -->
       <main id="dashboard" class="dashboard-page section-page active">
+        <!-- Farmer Mode Dedicated Bilingual Attention Banner -->
+        <div id="farmerModeContainer" class="farmer-mode-container" hidden>
+          <div id="farmerAlertBanner" class="farmer-alert-banner safe">
+            <div class="farmer-alert-icon">⚠️</div>
+            <div class="farmer-alert-content">
+              <h3>చెరువు 4 లో ప్రాణవాయువు (DO) తక్కువగా ఉంది &bull; Low Oxygen Danger in Pond 4</h3>
+              <p>ప్రస్తుత రీడింగ్: <strong>2.8 mg/L</strong> (కనీసం 4.0 mg/L ఉండాలి). రొయ్యలు ఊపిరాడక చనిపోయే ప్రమాదం ఉంది.</p>
+              <div class="farmer-alert-buttons">
+                <button class="farmer-action-btn emergency" id="farmerBtnAerator">▶ అత్యవసర ఏరియేషన్ ప్రారంభించు (Start Aeration Safe Dry-Run)</button>
+                <button class="farmer-action-btn" id="farmerBtnStopFeed">🛑 దాణా ఆపండి (Halt Feeding)</button>
+              </div>
+            </div>
+          </div>
+          <div class="farmer-metrics-row">
+            <div class="farmer-metric-card">
+              <span class="farmer-metric-label">ప్రాణవాయువు &bull; Dissolved Oxygen</span>
+              <div class="farmer-metric-val" id="farmerMetricDO">5.5 <small>mg/L</small></div>
+              <span class="farmer-metric-status good">&bull; సురక్షితం (Healthy)</span>
+            </div>
+            <div class="farmer-metric-card">
+              <span class="farmer-metric-label">నీటి ఉష్ణోగ్రత &bull; Water Temp</span>
+              <div class="farmer-metric-val" id="farmerMetricTemp">28.3 <small>&deg;C</small></div>
+              <span class="farmer-metric-status good">&bull; సాధారణం (Normal)</span>
+            </div>
+            <div class="farmer-metric-card">
+              <span class="farmer-metric-label">ఆమ్ల-క్షార గుణం &bull; Water pH</span>
+              <div class="farmer-metric-val" id="farmerMetricPH">7.9</div>
+              <span class="farmer-metric-status good">&bull; అనుకూలం (Optimal)</span>
+            </div>
+            <div class="farmer-metric-card">
+              <span class="farmer-metric-label">ఉప్పుశాతం &bull; Salinity</span>
+              <div class="farmer-metric-val" id="farmerMetricSal">25 <small>ppt</small></div>
+              <span class="farmer-metric-status good">&bull; అనుకూలం (Optimal)</span>
+            </div>
+          </div>
+        </div>
         
         <!-- ZONE 1: TOP HERO (AERIAL FARM VIEW) & RIGHT STACK (HEALTH, METRICS, ALERTS) -->
         <section class="zone-top-grid">
@@ -845,150 +931,1846 @@
 
       </main>
 
-      <!-- Secondary Navigation Section Pages (Ponds, Analytics, Automation, Alerts, Feeding, Water, Health, Reports, Settings) -->
+      <!-- Secondary Navigation Section Pages (Ponds, Live Monitoring, Operations, Feeding, Water, Equipment, AI Advisor, Analytics, Health, Alerts, Reports, Settings) -->
       
-      <!-- Ponds Page -->
+      <!-- 1. PONDS PAGE -->
       <section id="ponds" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Registered Ponds &amp; Status</h1>
-            <p>Comprehensive telemetry overview across all farm production ponds.</p>
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Registered Ponds &amp; Facility Status</h1>
+            <p>Live biometric telemetry, aeration interlocks, and pond parameters across registered production units.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnRegisterPond" title="Register new production pond">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>+ Register Pond</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnRefreshPonds" title="Refresh pond telemetry">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              <span>Refresh Telemetry</span>
+            </button>
           </div>
         </div>
-        <div class="pond-list-view-container active" id="fullPondsGrid" style="height: auto; min-height: 400px;">
-          <!-- Dynamically populated -->
+
+        <!-- KPI Summary Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Total Ponds <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="pondsTotalCount">20</b>
+              <span class="kpi-stat-unit">Units</span>
+            </div>
+            <span class="kpi-stat-sub">4 Configured &bull; 16 Ready</span>
+          </div>
+
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Normal / Healthy <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="pondsHealthyCount">16</b>
+              <span class="kpi-stat-unit">Ponds</span>
+            </div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&uarr; 80% Optimal Range</span>
+          </div>
+
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Warning Status <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="pondsWarningCount">3</b>
+              <span class="kpi-stat-unit">Ponds</span>
+            </div>
+            <span class="kpi-stat-sub" style="color: var(--amber-status);">Temp / DO Alert</span>
+          </div>
+
+          <div class="kpi-stat-card accent-red">
+            <span class="kpi-stat-label">Critical Status <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="pondsCriticalCount">1</b>
+              <span class="kpi-stat-unit">Pond</span>
+            </div>
+            <span class="kpi-stat-sub" style="color: var(--red-status);">Pond 4 &bull; Aeration Active</span>
+          </div>
+
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Avg Dissolved Oxygen <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="pondsAvgDO">5.6</b>
+              <span class="kpi-stat-unit">mg/L</span>
+            </div>
+            <span class="kpi-stat-sub">Target: &ge; 4.5 mg/L</span>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="filter-toolbar-card">
+          <div class="filter-group-left">
+            <div class="filter-search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="pondSearchFilter" placeholder="Search pond name, ID or species...">
+            </div>
+            <select class="filter-select" id="pondStatusSelectFilter">
+              <option value="ALL">All Statuses</option>
+              <option value="NORMAL">Normal / Healthy</option>
+              <option value="WARNING">Warning</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="MAINTENANCE">Maintenance</option>
+            </select>
+            <select class="filter-select" id="pondSpeciesSelectFilter">
+              <option value="ALL">All Species</option>
+              <option value="Litopenaeus vannamei">L. vannamei (Pacific White)</option>
+              <option value="Penaeus monodon">P. monodon (Black Tiger)</option>
+            </select>
+          </div>
+
+          <div class="btn-segmented-group">
+            <button class="btn-segment active" id="btnPondViewGrid">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <span>Grid View</span>
+            </button>
+            <button class="btn-segment" id="btnPondViewTable">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <span>Table View</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Grid View Container -->
+        <div class="pond-management-grid" id="pondsManagementGrid">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <!-- Table View Container (hidden by default) -->
+        <div class="app-table-container" id="pondsManagementTableWrapper" hidden>
+          <table class="app-table" id="pondsManagementTable">
+            <thead>
+              <tr>
+                <th>Pond ID</th>
+                <th>Name</th>
+                <th>Species / Batch</th>
+                <th>Status</th>
+                <th>DO (mg/L)</th>
+                <th>Temp (&deg;C)</th>
+                <th>pH</th>
+                <th>Salinity (ppt)</th>
+                <th>Depth</th>
+                <th>Aeration</th>
+                <th>Last Update</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pondsManagementTableBody">
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
         </div>
       </section>
 
-      <!-- Analytics Page -->
-      <section id="analytics" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Production Analytics &amp; Grading</h1>
-            <p>Biomass estimations, average body weight, and growth velocity metrics.</p>
+      <!-- 2. LIVE MONITORING PAGE -->
+      <section id="live-monitoring" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Live IoT Sensor Telemetry Stream</h1>
+            <p>Real-time optical probe streams, multi-channel threshold analytics, and physical edge connectivity diagnostics.</p>
+          </div>
+          <div class="page-header-actions">
+            <span class="live-stream-badge" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 5px;">
+              <span class="live-green-dot"></span> LIVE SSE STREAM ACTIVE
+            </span>
           </div>
         </div>
-        <div class="panel" style="padding: 20px;">
-          <div id="analyticsContent">Loading farm analytics data...</div>
+
+        <!-- KPI Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Online Sensors <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">18 / 20</b><span class="kpi-stat-unit">Probes</span></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">90% Operational</span>
+          </div>
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Telemetry Ingestion <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">120</b><span class="kpi-stat-unit">pkts/min</span></div>
+            <span class="kpi-stat-sub">MQTT / LoRaWAN Edge</span>
+          </div>
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Average Latency <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">&lt; 1.2</b><span class="kpi-stat-unit">sec</span></div>
+            <span class="kpi-stat-sub">Sovereign Local Hub</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Stale Telemetry <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">1</b><span class="kpi-stat-unit">Probe</span></div>
+            <span class="kpi-stat-sub" style="color: var(--amber-status);">Pond 8 Sonde Re-sync</span>
+          </div>
+        </div>
+
+        <!-- Chart & Sensor Matrix Grid -->
+        <div class="page-two-col-grid" style="margin-bottom: 14px;">
+          <!-- Left: Multi-parameter Chart Panel -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <div>
+                <h2 class="panel-title-text" style="font-size: 13px;">High-Frequency Telemetry Waveform</h2>
+                <div class="panel-title-subtitle">Continuous optical DO &amp; temperature logging</div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <select class="filter-select" id="liveMonitoringPondSelect">
+                  <option value="pond-01">Pond 1</option>
+                  <option value="pond-02">Pond 2</option>
+                  <option value="pond-03">Pond 3</option>
+                  <option value="pond-04">Pond 4</option>
+                </select>
+                <div class="btn-segmented-group">
+                  <button class="btn-segment active">DO</button>
+                  <button class="btn-segment">Temp</button>
+                  <button class="btn-segment">pH</button>
+                </div>
+              </div>
+            </div>
+            <div style="position: relative; height: 220px; background: #081421; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); overflow: hidden; padding: 10px;">
+              <canvas id="liveMonitoringChartCanvas" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+
+          <!-- Right: Probe Diagnostic Cards -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Physical Probe Health</h2>
+              <span class="status-badge normal">5 Channels Active</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff; font-size: 11px;">Optical DO Luminescence Probe</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">SN: ODO-98214 &bull; Calibration: Valid (DOC 68)</div>
+                </div>
+                <div style="text-align: right;">
+                  <span class="sensor-stream-tag online">&bull; 5.6 mg/L</span>
+                  <div style="font-size: 8.5px; color: var(--text-muted); margin-top: 2px;">Latency: 0.8s</div>
+                </div>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff; font-size: 11px;">PT100 Industrial Water Temperature</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">SN: TMP-44102 &bull; 4-Wire Shielded</div>
+                </div>
+                <div style="text-align: right;">
+                  <span class="sensor-stream-tag online">&bull; 28.4 &deg;C</span>
+                  <div style="font-size: 8.5px; color: var(--text-muted); margin-top: 2px;">Latency: 1.1s</div>
+                </div>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff; font-size: 11px;">Combination Glass Bulb pH Sonde</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">SN: PHS-10822 &bull; Ag/AgCl Reference</div>
+                </div>
+                <div style="text-align: right;">
+                  <span class="sensor-stream-tag online">&bull; 7.6 pH</span>
+                  <div style="font-size: 8.5px; color: var(--text-muted); margin-top: 2px;">Latency: 1.0s</div>
+                </div>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff; font-size: 11px;">4-Electrode Toroidal Salinity Probe</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">SN: SAL-77319 &bull; Anti-fouling coated</div>
+                </div>
+                <div style="text-align: right;">
+                  <span class="sensor-stream-tag online">&bull; 32 ppt</span>
+                  <div style="font-size: 8.5px; color: var(--text-muted); margin-top: 2px;">Latency: 1.4s</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry Packet Stream Table -->
+        <div class="panel" style="padding: 12px 14px;">
+          <div class="panel-header" style="margin-bottom: 8px;">
+            <h2 class="panel-title-text" style="font-size: 13px;">Real-time Telemetry Ingestion Log</h2>
+            <span style="font-size: 10px; color: var(--text-muted);">Streaming live packets from Sovereign Edge Gateway</span>
+          </div>
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Packet ID</th>
+                  <th>Node / Pond</th>
+                  <th>Parameter</th>
+                  <th>Raw Reading</th>
+                  <th>Calibrated Engineering Value</th>
+                  <th>RSSI / LQI</th>
+                  <th>Stream Status</th>
+                  <th>Ingested Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="telemetryPacketStreamTable">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
-      <!-- Automation / AI Advisor Page -->
+      <!-- 3. OPERATIONS PAGE -->
+      <section id="operations" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Farm Operations &amp; Safety Interlock Management</h1>
+            <p>Automated shift schedules, motor safety interlocks, and farm task execution logs.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnExportShiftLog">Export Shift Log</button>
+          </div>
+        </div>
+
+        <!-- Safety Engine Boundary Banner -->
+        <div class="status-callout-banner banner-warning">
+          <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div class="callout-content">
+            <h4>Safety Interlock Boundary Active</h4>
+            <p>Direct mechanical motor activation requires dual confirmation. Automated operations execute safely within pre-validated DO thresholds (&ge; 4.0 mg/L) and electrical phase protections.</p>
+          </div>
+        </div>
+
+        <!-- KPI Summary Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Today's Tasks</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">24</b><span class="kpi-stat-unit">Scheduled</span></div>
+            <span class="kpi-stat-sub">4 Ponds Active</span>
+          </div>
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Completed</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">14</b><span class="kpi-stat-unit">Tasks</span></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&uarr; 100% On-time</span>
+          </div>
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">In Progress</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">3</b><span class="kpi-stat-unit">Tasks</span></div>
+            <span class="kpi-stat-sub">Aeration &amp; Feeding</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Pending Window</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">7</b><span class="kpi-stat-unit">Tasks</span></div>
+            <span class="kpi-stat-sub">Evening Shifts</span>
+          </div>
+        </div>
+
+        <!-- Shift Timeline Schedule Panel -->
+        <div class="panel" style="padding: 12px 14px; margin-bottom: 14px;">
+          <div class="panel-header" style="margin-bottom: 12px;">
+            <h2 class="panel-title-text" style="font-size: 13px;">Operations Schedule (06:00 &ndash; 22:00)</h2>
+            <span style="font-size: 10px; color: var(--text-muted);">Current Time: 14:32:00</span>
+          </div>
+          <div class="schedule-gantt-wrapper">
+            <div class="gantt-time-header">
+              <span>06:00</span><span>08:00</span><span>10:00</span><span>12:00</span><span>14:00</span><span>16:00</span><span>18:00</span><span>20:00</span><span>22:00</span>
+            </div>
+            <!-- Feeding -->
+            <div class="gantt-task-row">
+              <div class="task-label-col">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                <span>Automated Feeding</span>
+              </div>
+              <div class="task-timeline-track">
+                <div class="gantt-block gantt-completed" style="left: 0%; width: 20%;">Ration 1 (06:00)</div>
+                <div class="gantt-block gantt-completed" style="left: 25%; width: 20%;">Ration 2 (10:00)</div>
+                <div class="gantt-block gantt-progress" style="left: 50%; width: 20%;">Ration 3 (14:00)</div>
+                <div class="gantt-block gantt-scheduled" style="left: 75%; width: 20%;">Ration 4 (18:00)</div>
+              </div>
+            </div>
+            <!-- Aeration -->
+            <div class="gantt-task-row">
+              <div class="task-label-col">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                <span>Aeration Modulation</span>
+              </div>
+              <div class="task-timeline-track">
+                <div class="gantt-block gantt-automode" style="left: 0%; width: 95%;">Continuous Autonomous AI Safety Interlock Loop</div>
+              </div>
+            </div>
+            <!-- Biosecurity & Water Check -->
+            <div class="gantt-task-row">
+              <div class="task-label-col">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <span>Health &amp; Tray Inspection</span>
+              </div>
+              <div class="task-timeline-track">
+                <div class="gantt-block gantt-gold" style="left: 12%; width: 18%;">Morning Tray Check</div>
+                <div class="gantt-block gantt-scheduled" style="left: 62%; width: 18%;">Evening Sampling</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Execution Log Table -->
+        <div class="panel" style="padding: 12px 14px;">
+          <div class="panel-header" style="margin-bottom: 8px;">
+            <h2 class="panel-title-text" style="font-size: 13px;">Daily Task Compliance Log</h2>
+            <span style="font-size: 10px; color: var(--text-muted);">Verified against Edge Controller</span>
+          </div>
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Task ID</th>
+                  <th>Operation Name</th>
+                  <th>Target Pond</th>
+                  <th>Equipment / Asset</th>
+                  <th>Assigned Operator</th>
+                  <th>Scheduled Time</th>
+                  <th>Interlock Validation</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="operationsTaskTableBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. FEEDING PAGE -->
+      <section id="feeding" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Feed Management &amp; Inventory Allocation</h1>
+            <p>Automated ration distribution, feed tray consumption telemetry, and feed conversion tracking.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnReceiveFeedStock">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <span>+ Receive Stock</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnCreateFeedPlan">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>+ Daily Feed Plan</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnLogFeedTray">Log Check Tray</button>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Daily Ration Planned</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">480</b><span class="kpi-stat-unit">kg</span></div>
+            <span class="kpi-stat-sub">Across 4 Stocked Ponds</span>
+          </div>
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Consumed to Date</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">320</b><span class="kpi-stat-unit">kg</span></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&uarr; 66.7% Dispersed</span>
+          </div>
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Estimated FCR</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">1.38</b><span class="kpi-stat-unit">FCR</span></div>
+            <span class="kpi-stat-sub">Benchmark: 1.45</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Total Warehouse Stock</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">8,450</b><span class="kpi-stat-unit">kg</span></div>
+            <span class="kpi-stat-sub">17.6 Days of Buffer</span>
+          </div>
+        </div>
+
+        <div class="page-two-col-grid" style="margin-bottom: 14px;">
+          <!-- Left: Feed Warehouse Inventory -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Warehouse Feed Inventory</h2>
+              <span class="status-badge normal">Sufficient Stock</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                  <strong style="color: #fff;">Pellet 1.8mm Grower (#2)</strong>
+                  <span style="color: var(--cyan-accent); font-weight: 600;">4,800 kg (68%)</span>
+                </div>
+                <div class="inventory-stock-bar"><div class="inventory-stock-fill" style="width: 68%; background: var(--cyan-accent);"></div></div>
+                <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 3px;">
+                  <span>Burn rate: 260 kg/day</span><span>18 days remaining</span>
+                </div>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                  <strong style="color: #fff;">Pellet 2.2mm Finisher (#3)</strong>
+                  <span style="color: var(--blue-accent); font-weight: 600;">2,450 kg (49%)</span>
+                </div>
+                <div class="inventory-stock-bar"><div class="inventory-stock-fill" style="width: 49%; background: var(--blue-accent);"></div></div>
+                <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 3px;">
+                  <span>Burn rate: 160 kg/day</span><span>15 days remaining</span>
+                </div>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                  <strong style="color: #fff;">Nursery Micro-Crumb (Starter)</strong>
+                  <span style="color: var(--green-status); font-weight: 600;">1,200 kg (85%)</span>
+                </div>
+                <div class="inventory-stock-bar"><div class="inventory-stock-fill" style="width: 85%; background: var(--green-status);"></div></div>
+                <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 3px;">
+                  <span>Burn rate: 60 kg/day</span><span>20 days remaining</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Tray Inspection Telemetry -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Check Tray Consumption Telemetry</h2>
+              <span class="status-badge normal">High Appetite</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Pond 1 Check Tray (North &amp; South)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Inspection at 12:00 &bull; 2 hr elapsed</div>
+                </div>
+                <span class="status-badge normal">95% Clean (High Appetite)</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Pond 2 Check Tray (Center)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Inspection at 12:00 &bull; 2 hr elapsed</div>
+                </div>
+                <span class="status-badge normal">90% Clean (Normal)</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Pond 3 Check Tray (East)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Inspection at 12:00 &bull; 2 hr elapsed</div>
+                </div>
+                <span class="status-badge warning">75% Clean (Reduced Rate)</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Pond 4 Check Tray (West)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Inspection at 12:00 &bull; 2 hr elapsed</div>
+                </div>
+                <span class="status-badge critical">60% Clean (Low DO Adjusted)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feeding Schedule Table -->
+        <div class="panel" style="padding: 12px 14px;">
+          <div class="panel-header" style="margin-bottom: 8px;">
+            <h2 class="panel-title-text" style="font-size: 13px;">Pond-wise Daily Ration Schedule</h2>
+            <span style="font-size: 10px; color: var(--text-muted);">4 Rations / Day Program</span>
+          </div>
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Pond ID</th>
+                  <th>Stocking DOC</th>
+                  <th>Biomass (kg)</th>
+                  <th>Feed Type</th>
+                  <th>06:00 (R1)</th>
+                  <th>10:00 (R2)</th>
+                  <th>14:00 (R3)</th>
+                  <th>18:00 (R4)</th>
+                  <th>Total Daily (kg)</th>
+                  <th>FCR</th>
+                </tr>
+              </thead>
+              <tbody id="feedingScheduleTableBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. WATER MANAGEMENT PAGE -->
+      <section id="water" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Water Chemistry &amp; Monk Sluice Bio-containment</h1>
+            <p>Monk sluice drainage locks, bio-containment boundaries, and water parameter balancing.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnLogWaterExchange">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              <span>+ Log Water Exchange</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnLogWaterTreatment">Log Water Treatment</button>
+          </div>
+        </div>
+
+        <!-- Monk Sluice Containment Banner -->
+        <div class="status-callout-banner banner-green">
+          <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <div class="callout-content">
+            <h4>Bio-containment Drainage Interlocks Secured</h4>
+            <p>All central bottom monk drainage gates are mechanically locked against unapproved effluent release. Normal discharge is restricted to surface skimming overflow through 300-micron biosecurity mesh.</p>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Avg Water Depth</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">1.25</b><span class="kpi-stat-unit">meters</span></div>
+            <span class="kpi-stat-sub">Target: 1.20 &ndash; 1.30 m</span>
+          </div>
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Monk Gates Locked</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">20 / 20</b><span class="kpi-stat-unit">Secured</span></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">100% Bio-containment</span>
+          </div>
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Total Alkalinity</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">142</b><span class="kpi-stat-unit">mg/L CaCO3</span></div>
+            <span class="kpi-stat-sub">Optimal (120 &ndash; 160)</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Unionized Ammonia (NH3)</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">0.02</b><span class="kpi-stat-unit">mg/L</span></div>
+            <span class="kpi-stat-sub">Safe Range (&lt; 0.05)</span>
+          </div>
+        </div>
+
+        <!-- Two Col Layout: Monk Sluice Status & Water Treatments -->
+        <div class="page-two-col-grid" style="margin-bottom: 14px;">
+          <!-- Left: Monk Sluice Status per Pond -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Monk Sluice Gate Fleet</h2>
+              <span class="status-badge normal">All Gates Locked</span>
+            </div>
+            <div id="monkSluiceList" style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Pond 1 Monk Sluice (#MS-01)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Depth: 1.25m &bull; Overflow: 300&mu;m Screen Intact</div>
+                </div>
+                <span class="monk-lock-badge locked"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> LOCKED</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Pond 2 Monk Sluice (#MS-02)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Depth: 1.28m &bull; Overflow: 300&mu;m Screen Intact</div>
+                </div>
+                <span class="monk-lock-badge locked"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> LOCKED</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Pond 3 Monk Sluice (#MS-03)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Depth: 1.22m &bull; Overflow: 300&mu;m Screen Intact</div>
+                </div>
+                <span class="monk-lock-badge locked"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> LOCKED</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Pond 4 Monk Sluice (#MS-04)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Depth: 1.26m &bull; Overflow: 300&mu;m Screen Intact</div>
+                </div>
+                <span class="monk-lock-badge locked"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> LOCKED</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Water Treatment & Chemical Log -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Water Treatment Records</h2>
+              <span style="font-size: 10px; color: var(--text-muted);">Probiotics &amp; Liming</span>
+            </div>
+            <div class="app-table-container">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Pond</th>
+                    <th>Treatment Agent</th>
+                    <th>Dosage</th>
+                    <th>Purpose</th>
+                  </tr>
+                </thead>
+                <tbody id="waterTreatmentTableBody">
+                  <tr>
+                    <td>30 Oct 07:00</td>
+                    <td><strong>Pond 1</strong></td>
+                    <td>Bacillus subtilis probiotic</td>
+                    <td>2.5 kg</td>
+                    <td>Sludge biodegradation</td>
+                  </tr>
+                  <tr>
+                    <td>29 Oct 16:30</td>
+                    <td><strong>Pond 3</strong></td>
+                    <td>Agricultural Dolomite</td>
+                    <td>100 kg</td>
+                    <td>Alkalinity buffering</td>
+                  </tr>
+                  <tr>
+                    <td>29 Oct 08:00</td>
+                    <td><strong>Pond 4</strong></td>
+                    <td>Agricultural Lime (CaCO3)</td>
+                    <td>50 kg</td>
+                    <td>pH stabilization</td>
+                  </tr>
+                  <tr>
+                    <td>28 Oct 11:00</td>
+                    <td><strong>Pond 2</strong></td>
+                    <td>Photosynthetic bacteria</td>
+                    <td>15 L</td>
+                    <td>H2S control</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. EQUIPMENT PAGE -->
+      <section id="equipment" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Equipment &amp; Actuator Fleet Management</h1>
+            <p>Paddlewheel aerators, auto-feeders, submersible pumps, and LoRaWAN field gateways.</p>
+          </div>
+          <div class="page-header-actions">
+            <span class="status-badge normal" style="padding: 5px 10px;">All Circuits Online</span>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Total Connected Assets</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">32</b><span class="kpi-stat-unit">Units</span></div>
+            <span class="kpi-stat-sub">Across 4 Ponds &amp; Pump Station</span>
+          </div>
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Running Actuators</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">22</b><span class="kpi-stat-unit">Running</span></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&uarr; 68.8% Utilization</span>
+          </div>
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Standby Ready</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">8</b><span class="kpi-stat-unit">Units</span></div>
+            <span class="kpi-stat-sub">Auxiliary Aeration Ready</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Maintenance / Check</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">2</b><span class="kpi-stat-unit">Units</span></div>
+            <span class="kpi-stat-sub" style="color: var(--amber-status);">Pond 8 Sonde &amp; Feeder 4</span>
+          </div>
+        </div>
+
+        <!-- Filter Toolbar -->
+        <div class="filter-toolbar-card">
+          <div class="filter-group-left">
+            <div class="filter-search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="equipmentSearchFilter" placeholder="Search equipment ID, name or pond...">
+            </div>
+            <select class="filter-select" id="equipmentTypeFilter">
+              <option value="ALL">All Equipment Types</option>
+              <option value="AERATOR">Aerator Paddlewheels</option>
+              <option value="FEEDER">Automated Feeders</option>
+              <option value="PUMP">Pumps (Inlet / Outlet)</option>
+              <option value="GATEWAY">LoRaWAN Edge Gateways</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Equipment Asset Table -->
+        <div class="panel" style="padding: 12px 14px;">
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Equipment ID</th>
+                  <th>Asset Description</th>
+                  <th>Type</th>
+                  <th>Assigned Pond</th>
+                  <th>Power (kW)</th>
+                  <th>Status</th>
+                  <th>Cumulative Runtime</th>
+                  <th>Health</th>
+                  <th>Safety Control</th>
+                </tr>
+              </thead>
+              <tbody id="equipmentFleetTableBody">
+                <!-- Dynamically generated equipment items -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. AUTOMATION & AI ADVISOR PAGE -->
       <section id="automation" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Automation Safety Engine &amp; AI Advisor</h1>
-            <p>Physical interlock boundaries, advisory dry-run simulations, and equipment safety.</p>
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>AI Farm Advisor &amp; Decision Support</h1>
+            <p>Predictive DO forecasting, feed modulation recommendations, and validated dry-run safety boundaries.</p>
+          </div>
+          <div class="page-header-actions">
+            <span class="status-badge normal" style="font-weight: 600;">Aqua-Intelligence v2.4 Active</span>
           </div>
         </div>
-        <div class="panel" style="padding: 20px;">
-          <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--amber-status);">Advisory Dry-Run Boundary</h3>
-          <p style="color: var(--text-muted); margin-bottom: 14px; max-width: 800px;">
-            Aqua OS AI recommendations are purely advisory. Physical equipment controls remain safely locked until hardware interlocks, water chemistries, and on-site sensors are commissioned.
-          </p>
-          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px;">
-            <label for="dryRunPondSelect" style="color: var(--text-secondary);">Select Pond:</label>
-            <select id="dryRunPondSelect" class="pond-select-dropdown">
+
+        <!-- KPI Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Farm Biome Health</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">88 / 100</b></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&uarr; Optimal Aquatic Growth</span>
+          </div>
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Active Action Items</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">3</b><span class="kpi-stat-unit">Advisories</span></div>
+            <span class="kpi-stat-sub">1 High &bull; 1 Medium &bull; 1 Normal</span>
+          </div>
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Prediction Accuracy</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">94.8%</b></div>
+            <span class="kpi-stat-sub">24-hr DO Trajectory</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Safety Mode</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">Advisory Only</b></div>
+            <span class="kpi-stat-sub">Dry-run Verified</span>
+          </div>
+        </div>
+
+        <!-- Two Column Layout: Recommendations Feed + Safe Dry Run Tool -->
+        
+        <!-- Interactive Natural Language Farm AI Agent Console -->
+        <div class="agent-chat-container">
+          <div style="padding: 10px 14px; background: #060d15; border-bottom: 1px solid #162c42; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="status-dot-pulse"></span>
+              <strong style="color: #fff; font-size: 12px;">Aqua OS Farm Operations Agent &bull; v0.6.0 (Tool-Routed AI)</strong>
+            </div>
+            <span class="sensor-stream-tag online">&bull; Ready (Telemetry Grounded)</span>
+          </div>
+
+          <div class="agent-prompt-chips" id="agentPromptChips">
+            <button class="agent-chip-btn" data-query="How are my ponds doing today?">📊 Overall Farm Health</button>
+            <button class="agent-chip-btn" data-query="What is the dissolved oxygen status and trajectory in Pond 4?">⚠️ Pond 4 DO Risk</button>
+            <button class="agent-chip-btn" data-query="Check feed inventory and reorder warnings.">📦 Feed Stock &amp; Supply</button>
+            <button class="agent-chip-btn" data-query="What is the water level and river pump status?">🌊 Water &amp; Pump Status</button>
+            <button class="agent-chip-btn" data-query="Are there any transformer overload risks?">⚡ Transformer Headroom</button>
+          </div>
+
+          <div class="agent-chat-messages" id="agentChatMessages">
+            <div class="agent-msg-bubble assistant">
+              <strong>Farm Agent:</strong> Hello! I am your AI Operations Advisor grounded in real-time sensor telemetry and farm registers. Ask me any question about your ponds, dissolved oxygen forecasts, feeding schedules, or biosecurity limits.
+            </div>
+          </div>
+
+          <form id="agentChatForm" class="agent-chat-input-bar">
+            <input type="text" id="agentQueryInput" class="agent-chat-input" placeholder="Ask a question about your farm (e.g., 'Is dissolved oxygen safe in Pond 3?')..." autocomplete="off">
+            <button type="submit" class="btn-primary-blue" id="btnSendAgentQuery">Ask Agent</button>
+          </form>
+        </div>
+
+        <!-- Operator Decision Reviews Inbox -->
+        <div class="panel" style="padding: 14px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+              <h2 class="panel-title-text" style="font-size: 13px;">Operator Decision Reviews &bull; Evidence Snapshots</h2>
+              <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Advisory recommendations awaiting human review and outcome verification.</p>
+            </div>
+            <button class="btn-mini-action" id="btnRefreshDecisions">Refresh Decisions</button>
+          </div>
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Finding ID</th>
+                  <th>Pond</th>
+                  <th>Category</th>
+                  <th>Issue Title &amp; Evidence</th>
+                  <th>Severity</th>
+                  <th>Confidence</th>
+                  <th>Status</th>
+                  <th>Review Action</th>
+                </tr>
+              </thead>
+              <tbody id="agentDecisionsTableBody">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">Loading operator decisions from backend...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+<div class="page-two-col-grid">
+          <!-- Left: AI Prioritized Recommendations -->
+          <div>
+            <!-- Recommendation 1: High Priority -->
+            <div class="ai-rec-card">
+              <div class="ai-rec-header">
+                <div class="ai-rec-title-wrap">
+                  <span class="ai-rec-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--red-status); border: 1px solid var(--red-border);">HIGH PRIORITY</span>
+                  <strong style="color: #fff; font-size: 12px;">Pond 4 Nocturnal DO Dip Prevention</strong>
+                </div>
+                <span style="font-size: 9.5px; color: var(--text-muted);">Confidence: 96%</span>
+              </div>
+              <div class="ai-rec-body">
+                Model predicts dissolved oxygen will breach the 3.0 mg/L minimum between 02:00 and 05:30 due to high phytoplankton respiration and elevated water temperature (30.1&deg;C).
+              </div>
+              <div class="ai-rec-evidence-list">
+                <strong>Empirical Evidence:</strong>
+                <ul>
+                  <li>DO dropped to 2.8 mg/L during previous night at 04:15.</li>
+                  <li>Standing biomass in Pond 4 is 4,920 kg (high stocking density).</li>
+                  <li>Wind forecast is calm (&lt; 4 km/h), limiting natural surface re-aeration.</li>
+                </ul>
+              </div>
+              <div class="ai-rec-actions">
+                <button class="btn-primary-blue" id="btnApplyRec1">Apply to Aeration Plan</button>
+                <button class="btn-mini-action">View Telemetry Waveform</button>
+              </div>
+            </div>
+
+            <!-- Recommendation 2: Medium Priority -->
+            <div class="ai-rec-card">
+              <div class="ai-rec-header">
+                <div class="ai-rec-title-wrap">
+                  <span class="ai-rec-badge" style="background: rgba(245, 158, 11, 0.2); color: var(--amber-status); border: 1px solid var(--amber-border);">MEDIUM PRIORITY</span>
+                  <strong style="color: #fff; font-size: 12px;">Pond 3 Temperature &amp; Ration Adjustment</strong>
+                </div>
+                <span style="font-size: 9.5px; color: var(--text-muted);">Confidence: 91%</span>
+              </div>
+              <div class="ai-rec-body">
+                Pond 3 surface water temperature has reached 29.5&deg;C. Consider increasing aeration by 20% and monitoring afternoon check tray feeding closely to prevent uneaten pellet waste.
+              </div>
+              <div class="ai-rec-evidence-list">
+                <strong>Empirical Evidence:</strong>
+                <ul>
+                  <li>Temperature is 1.5&deg;C higher than 7-day running average.</li>
+                  <li>Afternoon feed check tray had 25% residue at 14:00.</li>
+                </ul>
+              </div>
+              <div class="ai-rec-actions">
+                <button class="btn-primary-blue" id="btnApplyRec2">Apply to Feeding Schedule</button>
+                <button class="btn-mini-action">View Tray Records</button>
+              </div>
+            </div>
+
+            <!-- Recommendation 3: Normal Priority -->
+            <div class="ai-rec-card">
+              <div class="ai-rec-header">
+                <div class="ai-rec-title-wrap">
+                  <span class="ai-rec-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--green-status); border: 1px solid var(--green-border);">OPTIMIZATION</span>
+                  <strong style="color: #fff; font-size: 12px;">Pond 1 Probiotic Maintenance Dose</strong>
+                </div>
+                <span style="font-size: 9.5px; color: var(--text-muted);">Confidence: 89%</span>
+              </div>
+              <div class="ai-rec-body">
+                Water quality parameters in Pond 1 are in optimal range. Administer standard 2.5 kg Bacillus spp. probiotic inoculation tomorrow at 08:00 to sustain nitrifying bacteria colony.
+              </div>
+              <div class="ai-rec-actions">
+                <button class="btn-mini-action btn-accent-green" id="btnApplyRec3">Schedule Treatment</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Advisory Dry-Run Interlock Boundary Tool -->
+          <div>
+            <div class="panel" style="padding: 14px;">
+              <h3 style="font-size: 13px; margin-bottom: 6px; color: #fff; display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Advisory Dry-Run Interlock Boundary
+              </h3>
+              <p style="color: var(--text-muted); font-size: 10.5px; line-height: 1.45; margin-bottom: 12px;">
+                Aqua OS enforces a strict non-negotiable physical safety boundary: AI recommendations cannot directly actuate physical machinery without automated safety validation and physical confirmation.
+              </p>
+              
+              <div style="background: rgba(8, 20, 33, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
+                <label for="dryRunPondSelect" style="color: var(--text-secondary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; display: block; margin-bottom: 4px;">Target Pond for Dry-Run Simulation:</label>
+                <div style="display: flex; gap: 8px;">
+                  <select id="dryRunPondSelect" class="filter-select" style="flex: 1;">
+                    <option value="pond-01">Pond 1 (Healthy)</option>
+                    <option value="pond-02">Pond 2 (Healthy)</option>
+                    <option value="pond-03">Pond 3 (Warning)</option>
+                    <option value="pond-04">Pond 4 (Critical)</option>
+                  </select>
+                  <button class="btn-primary-blue" id="btnRunDryRun">Run Simulation</button>
+                </div>
+              </div>
+
+              <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">Dry-Run Simulation Output:</div>
+              <div id="dryRunResultOutput" style="background: #040911; border: 1px solid var(--border-subtle); border-radius: 4px; padding: 10px; font-family: 'SF Mono', Consolas, monospace; font-size: 10px; color: #a5f3fc; min-height: 120px; white-space: pre-wrap; overflow-x: auto;">Click 'Run Simulation' to execute safe advisory dry-run verification via backend API...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. PRODUCTION ANALYTICS & GRADING PAGE -->
+      <section id="analytics" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Production Analytics &amp; Biomass Grading</h1>
+            <p>Standing biomass estimation, size grading count distributions, and growth velocity metrics.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnRecordGrowthSample">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span>+ Cast-Net Sample</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnRecordHarvest">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>+ Record Harvest</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnExportProductionReport">Export Forecast</button>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Total Standing Biomass</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">18,240</b><span class="kpi-stat-unit">kg</span></div>
+            <span class="kpi-stat-sub">Across 4 Stocked Ponds</span>
+          </div>
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Farm Average Body Weight</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">18.4</b><span class="kpi-stat-unit">grams</span></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&uarr; 12% in 7 Days</span>
+          </div>
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Growth Velocity</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">0.68</b><span class="kpi-stat-unit">g / day</span></div>
+            <span class="kpi-stat-sub">Target: &ge; 0.60 g/day</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Est. Target Harvest Date</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">24 Nov</b><span class="kpi-stat-unit">2026</span></div>
+            <span class="kpi-stat-sub">DOC 92 &bull; 25g Target</span>
+          </div>
+        </div>
+
+        <div class="page-two-col-grid" style="margin-bottom: 14px;">
+          <!-- Left: Size Grading Histogram -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 8px;">
+              <div>
+                <h2 class="panel-title-text" style="font-size: 13px;">Commercial Size Grading Distribution</h2>
+                <div class="panel-title-subtitle">Pond 1 &bull; Litopenaeus vannamei &bull; DOC 68</div>
+              </div>
+              <span class="status-badge normal">Peak 30-40 Count</span>
+            </div>
+            <div class="grading-chart-box" style="height: 160px; margin-top: 10px;">
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">18%</span>
+                <div class="grading-bar-fill bar-cyan" style="height: 45%;"></div>
+                <span class="grading-size-label">20-30</span>
+              </div>
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">32%</span>
+                <div class="grading-bar-fill bar-blue-highlight" style="height: 80%;"></div>
+                <span class="grading-size-label">30-40</span>
+              </div>
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">28%</span>
+                <div class="grading-bar-fill bar-cyan" style="height: 70%;"></div>
+                <span class="grading-size-label">40-50</span>
+              </div>
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">18%</span>
+                <div class="grading-bar-fill bar-amber" style="height: 45%;"></div>
+                <span class="grading-size-label">50-60</span>
+              </div>
+              <div class="grading-bar-col">
+                <span class="grading-pct-label">4%</span>
+                <div class="grading-bar-fill bar-red" style="height: 12%;"></div>
+                <span class="grading-size-label">60-70</span>
+              </div>
+            </div>
+            <div style="font-size: 9.5px; color: var(--text-muted); text-align: center; margin-top: 8px;">
+              Size count = pieces per kg. 30-40 count represents commercial premium harvest grade.
+            </div>
+          </div>
+
+          <!-- Right: Growth Curve Analysis -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 8px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Biological Growth Curve (DOC 1 &ndash; 68)</h2>
+              <span class="status-badge normal">Optimal Curve</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">DOC 1 &ndash; 20 (Nursery Stage)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Stocking weight: 0.02g &rarr; 2.5g</div>
+                </div>
+                <span style="color: var(--cyan-accent); font-weight: 600; font-size: 10px;">Growth: 0.12 g/day</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">DOC 21 &ndash; 45 (Intermediate Growth)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Weight: 2.5g &rarr; 9.8g</div>
+                </div>
+                <span style="color: var(--cyan-accent); font-weight: 600; font-size: 10px;">Growth: 0.31 g/day</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">DOC 46 &ndash; 68 (Growout Velocity)</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Current weight: 9.8g &rarr; 18.4g</div>
+                </div>
+                <span style="color: var(--green-status); font-weight: 600; font-size: 10px;">Growth: 0.68 g/day</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Batch Rearing Registry Table -->
+        <div class="panel" style="padding: 12px 14px;">
+          <div class="panel-header" style="margin-bottom: 8px;">
+            <h2 class="panel-title-text" style="font-size: 13px;">Active Batch Production Registry</h2>
+            <span style="font-size: 10px; color: var(--text-muted);">4 Stocked Ponds</span>
+          </div>
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Pond ID</th>
+                  <th>Batch Number</th>
+                  <th>Species</th>
+                  <th>Stocking Date</th>
+                  <th>DOC</th>
+                  <th>Stocking Quantity</th>
+                  <th>Survival Rate</th>
+                  <th>ABW (g)</th>
+                  <th>Est. Biomass (kg)</th>
+                  <th>Est. Harvest Date</th>
+                </tr>
+              </thead>
+              <tbody id="productionBatchTableBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. HEALTH & BIOSECURITY PAGE -->
+      <section id="health" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Shrimp Health &amp; Biosecurity Surveillance</h1>
+            <p>Histological health indexing, PCR pathogen surveillance, and farm perimeter containment protocols.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnRecordMortality">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <span>+ Log Mortality</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnRecordTreatment">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+              <span>+ Record Treatment</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnLogHealthSample">Log Clinical Observation</button>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Farm Health Index</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">96%</b></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&uarr; Excellent Vigour</span>
+          </div>
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Active Pathogen Detections</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">0</b><span class="kpi-stat-unit">Alerts</span></div>
+            <span class="kpi-stat-sub">WSSV, EHP, AHPND Negative</span>
+          </div>
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Biosecurity Compliance</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">100%</b></div>
+            <span class="kpi-stat-sub">All Perimeter Audits Passed</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Last Lab Sample</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number">30 Oct</b><span class="kpi-stat-unit">08:00</span></div>
+            <span class="kpi-stat-sub">Weekly Surveillance Log</span>
+          </div>
+        </div>
+
+        <div class="page-two-col-grid" style="margin-bottom: 14px;">
+          <!-- Left: Organ Biometric Evaluation -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Organ Biometric Evaluation (Microscopic)</h2>
+              <span class="status-badge normal">Grade A Healthy</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Hepatopancreas (HP) Health</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Dark brown, intact tubules, dense lipid droplets</div>
+                </div>
+                <span class="checklist-badge-pass">OPTIMAL</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Gut Fullness &amp; Clarity</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">100% full, uniform brown chyme, no white faeces</div>
+                </div>
+                <span class="checklist-badge-pass">OPTIMAL</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Gills &amp; Antennae Cleanliness</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Translucent gills, no fouling, intact antennae</div>
+                </div>
+                <span class="checklist-badge-pass">CLEAN</span>
+              </div>
+              <div class="checklist-item-card">
+                <div>
+                  <strong style="color: #fff;">Muscle Clarity &amp; Shell Firmness</strong>
+                  <div style="font-size: 9.5px; color: var(--text-muted);">Translucent muscle, hard exoskeleton, no necrosis</div>
+                </div>
+                <span class="checklist-badge-pass">EXCELLENT</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Biosecurity Protocols Checklist -->
+          <div class="panel" style="padding: 12px 14px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Perimeter Biosecurity Protocols</h2>
+              <span class="status-badge normal">Fully Compliant</span>
+            </div>
+            <div class="checklist-group">
+              <label class="checklist-item-card">
+                <div class="checklist-item-left">
+                  <input type="checkbox" checked class="checklist-checkbox" aria-label="Crab fence barrier intact">
+                  <div>
+                    <strong style="color: #fff;">Crab Fence Barrier Integrity</strong>
+                    <div style="font-size: 9.5px; color: var(--text-muted);">Perimeter HDPE plastic sheeting intact without gaps</div>
+                  </div>
+                </div>
+                <span class="checklist-badge-pass">PASS</span>
+              </label>
+
+              <label class="checklist-item-card">
+                <div class="checklist-item-left">
+                  <input type="checkbox" checked class="checklist-checkbox" aria-label="Overhead bird scaring netting tensioned">
+                  <div>
+                    <strong style="color: #fff;">Overhead Bird Scaring Wire Grid</strong>
+                    <div style="font-size: 9.5px; color: var(--text-muted);">Parallel wire grid tensioned across all ponds</div>
+                  </div>
+                </div>
+                <span class="checklist-badge-pass">PASS</span>
+              </label>
+
+              <label class="checklist-item-card">
+                <div class="checklist-item-left">
+                  <input type="checkbox" checked class="checklist-checkbox" aria-label="Vehicle tire bath and footbaths active">
+                  <div>
+                    <strong style="color: #fff;">Footbath &amp; Wheel Dip Chlorination</strong>
+                    <div style="font-size: 9.5px; color: var(--text-muted);">200 ppm active chlorine solution refreshed daily</div>
+                  </div>
+                </div>
+                <span class="checklist-badge-pass">PASS</span>
+              </label>
+
+              <label class="checklist-item-card">
+                <div class="checklist-item-left">
+                  <input type="checkbox" checked class="checklist-checkbox" aria-label="Dedicated equipment per pond strictly enforced">
+                  <div>
+                    <strong style="color: #fff;">Dedicated Pond Equipment Segregation</strong>
+                    <div style="font-size: 9.5px; color: var(--text-muted);">Cast nets, secchi disks, and sampling tools isolated</div>
+                  </div>
+                </div>
+                <span class="checklist-badge-pass">PASS</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- PCR Pathogen Surveillance Log -->
+        <div class="panel" style="padding: 12px 14px;">
+          <div class="panel-header" style="margin-bottom: 8px;">
+            <h2 class="panel-title-text" style="font-size: 13px;">PCR Diagnostic Pathogen Surveillance Log</h2>
+            <span style="font-size: 10px; color: var(--text-muted);">Accredited Aquaculture Diagnostic Laboratory</span>
+          </div>
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Test Date</th>
+                  <th>Target Pathogen</th>
+                  <th>Diagnostic Methodology</th>
+                  <th>Pond Tested</th>
+                  <th>Assay Threshold (Ct)</th>
+                  <th>Result</th>
+                  <th>Certified By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>28 Oct 2026</td>
+                  <td><strong>WSSV (White Spot Syndrome)</strong></td>
+                  <td>Real-Time qPCR</td>
+                  <td>Pond 1 &amp; Pond 2</td>
+                  <td>Ct &gt; 40 (Undetected)</td>
+                  <td><span class="status-badge normal">NEGATIVE</span></td>
+                  <td>Dr. K. Rao (Pathologist)</td>
+                </tr>
+                <tr>
+                  <td>28 Oct 2026</td>
+                  <td><strong>EHP (Enterocytozoon hepatopenaei)</strong></td>
+                  <td>Nested PCR (SSU rRNA)</td>
+                  <td>Pond 3 &amp; Pond 4</td>
+                  <td>Negative</td>
+                  <td><span class="status-badge normal">NEGATIVE</span></td>
+                  <td>Dr. K. Rao (Pathologist)</td>
+                </tr>
+                <tr>
+                  <td>28 Oct 2026</td>
+                  <td><strong>AHPND / EMS (PirA / PirB Toxins)</strong></td>
+                  <td>Duplex qPCR</td>
+                  <td>All Stocked Ponds</td>
+                  <td>Ct &gt; 40 (Undetected)</td>
+                  <td><span class="status-badge normal">NEGATIVE</span></td>
+                  <td>Dr. K. Rao (Pathologist)</td>
+                </tr>
+                <tr>
+                  <td>29 Oct 2026</td>
+                  <td><strong>Vibrio Total (TCBS Count)</strong></td>
+                  <td>TCBS Agar Plating</td>
+                  <td>Pond 1 &ndash; Pond 4</td>
+                  <td>&lt; 100 CFU / mL Green</td>
+                  <td><span class="status-badge normal">NORMAL (SAFE)</span></td>
+                  <td>Lab Tech V. Kumar</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. ALERTS MANAGEMENT PAGE -->
+      <section id="alerts" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Alert Lifecycle &amp; Threshold Breaches</h1>
+            <p>Active alarm acknowledgements, resolution history, and root-cause diagnostic logs.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnRefreshAlerts">Refresh Alerts</button>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-red">
+            <span class="kpi-stat-label">Critical Alerts</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number" id="alertKpiCritical">2</b><span class="kpi-stat-unit">Active</span></div>
+            <span class="kpi-stat-sub" style="color: var(--red-status);">Pond 4 &bull; DO Low</span>
+          </div>
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Warnings</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number" id="alertKpiWarning">3</b><span class="kpi-stat-unit">Active</span></div>
+            <span class="kpi-stat-sub" style="color: var(--amber-status);">Temp &amp; pH Bounds</span>
+          </div>
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Acknowledged</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number" id="alertKpiAck">1</b><span class="kpi-stat-unit">Alert</span></div>
+            <span class="kpi-stat-sub">Operator Intervening</span>
+          </div>
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Resolved (24h)</span>
+            <div class="kpi-stat-val-row"><b class="kpi-stat-number" id="alertKpiResolved">8</b><span class="kpi-stat-unit">Cleared</span></div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&uarr; Auto-healed &amp; Cleared</span>
+          </div>
+        </div>
+
+        <!-- Filter Toolbar -->
+        <div class="filter-toolbar-card">
+          <div class="filter-group-left">
+            <div class="filter-search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="alertsSearchInput" placeholder="Filter alerts by pond or message...">
+            </div>
+            <select class="filter-select" id="alertSeverityFilter">
+              <option value="ALL">All Severities</option>
+              <option value="CRITICAL">Critical Only</option>
+              <option value="WARNING">Warnings Only</option>
+              <option value="INFO">Informational</option>
+            </select>
+            <select class="filter-select" id="alertStatusFilter">
+              <option value="ALL">All States</option>
+              <option value="ACTIVE">Active (Unresolved)</option>
+              <option value="ACKNOWLEDGED">Acknowledged</option>
+              <option value="RESOLVED">Resolved</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Alerts Management Table -->
+        <div class="panel" style="padding: 12px 14px;">
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Pond ID</th>
+                  <th>Alert Message</th>
+                  <th>Threshold Rule</th>
+                  <th>Triggered At</th>
+                  <th>Age</th>
+                  <th>State</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="alertsManagementTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11. REPORTS & EXPORTS PAGE -->
+      
+      <!-- 12. FARM FINANCE PAGE -->
+      <section id="finance" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Farm Financials &amp; Cost Attribution</h1>
+            <p>Working capital cash flow, operational expense ledgers, crop-cycle budget variance, and cost-per-kg shrimp attribution.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnRecordExpense">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>+ Record Expense</span>
+            </button>
+            <button class="btn-secondary-dark" id="btnRecordCashTx">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              <span>+ Cash Transaction</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Summary Row -->
+        <div class="kpi-summary-row">
+          <div class="kpi-stat-card accent-blue">
+            <span class="kpi-stat-label">Total Crop Expenses <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="finTotalExpenses">&#8377;0</b>
+              <span class="kpi-stat-unit">INR</span>
+            </div>
+            <span class="kpi-stat-sub" id="finAttributedSub">Attributed across active batches</span>
+          </div>
+
+          <div class="kpi-stat-card accent-green">
+            <span class="kpi-stat-label">Available Cash Balance <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="finCashBalance">&#8377;0</b>
+              <span class="kpi-stat-unit">INR</span>
+            </div>
+            <span class="kpi-stat-sub" style="color: var(--green-status);">&bull; Working Capital Reserve</span>
+          </div>
+
+          <div class="kpi-stat-card accent-cyan">
+            <span class="kpi-stat-label">Net Working Capital Flow <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="finNetCashFlow">&#8377;0</b>
+              <span class="kpi-stat-unit">INR</span>
+            </div>
+            <span class="kpi-stat-sub" id="finFlowSub">0 Inflow &bull; 0 Outflow</span>
+          </div>
+
+          <div class="kpi-stat-card accent-amber">
+            <span class="kpi-stat-label">Feed Cost Attribution <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+            <div class="kpi-stat-val-row">
+              <b class="kpi-stat-number" id="finFeedCostPct">0%</b>
+              <span class="kpi-stat-unit">of OpEx</span>
+            </div>
+            <span class="kpi-stat-sub" style="color: var(--amber-status);">Primary Operational Cost</span>
+          </div>
+        </div>
+
+        <!-- Filter Toolbar -->
+        <div class="filter-toolbar-card">
+          <div class="filter-group-left">
+            <div class="filter-search-box">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="expenseSearchFilter" placeholder="Filter expenses by vendor, description, or batch..." aria-label="Search Expenses">
+            </div>
+            <select class="filter-select" id="expenseCategoryFilter" aria-label="Category Filter">
+              <option value="ALL">All Expense Categories</option>
+              <option value="FEED">Feed &amp; Nutrition</option>
+              <option value="ENERGY">Energy &amp; Diesel Generator</option>
+              <option value="SEED_PL">Seed PL / Hatchery Stock</option>
+              <option value="CHEMICAL_AND_TREATMENT">Probiotics &amp; Minerals</option>
+              <option value="LABOR">Farm Labor &amp; Security</option>
+              <option value="EQUIPMENT_MAINTENANCE">Equipment Repairs</option>
+            </select>
+          </div>
+          <div class="filter-group-right">
+            <button class="btn-secondary-dark" id="btnExportExpensesCSV">Export Ledger CSV</button>
+          </div>
+        </div>
+
+        <!-- Two Column Grid: Cost Breakdown & Crop Budget -->
+        <div class="page-two-col-grid" style="margin-bottom: 14px;">
+          <!-- Left: Cost Category Breakdown -->
+          <div class="panel" style="padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Operating Cost Attribution by Category</h2>
+              <span style="font-size: 10px; color: var(--cyan-accent);">Active Crop Cycle</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;" id="financeCategoryBars">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Right: Crop Budget & Cost per Kg -->
+          <div class="panel" style="padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h2 class="panel-title-text" style="font-size: 13px;">Crop Budget Utilization &amp; Unit Economics</h2>
+              <span class="status-badge normal">INR Currency</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div class="water-depth-bar-wrapper">
+                <div class="water-depth-labels">
+                  <span>Cycle Budget Allocation</span>
+                  <span id="budgetAllocLabel">&#8377;0 / &#8377;0</span>
+                </div>
+                <div class="water-depth-track">
+                  <div class="water-depth-fill" id="budgetProgressFill" style="width: 0%;"></div>
+                </div>
+              </div>
+              <div class="pond-metrics-tiles-row" style="margin-top: 6px;">
+                <div class="pond-metric-tile">
+                  <small>Cost / kg Biomass</small>
+                  <b id="finCostPerKg">&#8377;--</b>
+                </div>
+                <div class="pond-metric-tile">
+                  <small>Attributed Batches</small>
+                  <b id="finAttributedBatches">--</b>
+                </div>
+                <div class="pond-metric-tile">
+                  <small>Recorded Receipts</small>
+                  <b id="finReceiptsCount">0</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comprehensive Expense Ledger Table -->
+        <div class="app-table-container">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Expense ID</th>
+                <th>Category</th>
+                <th>Vendor / Item Description</th>
+                <th>Pond / Batch</th>
+                <th>Amount (INR)</th>
+                <th>Payment Mode</th>
+                <th>Provenance</th>
+              </tr>
+            </thead>
+            <tbody id="financeLedgerTableBody">
+              <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading financial expense ledgers...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="reports" class="section-page">
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Farm Telemetry &amp; Operational Reports</h1>
+            <p>Generate authenticated CSV telemetry datasets, daily water quality logs, and biosecurity audit sheets.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnExportCsv">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              <span>Export Telemetry CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Configuration Toolbar -->
+        <div class="filter-toolbar-card">
+          <div class="filter-group-left">
+            <select class="filter-select" id="reportTypeSelect">
+              <option value="telemetry">Telemetry Time-Series Export</option>
+              <option value="water">Daily Water Quality &amp; Chemistry Log</option>
+              <option value="feeding">Feed Consumption &amp; FCR Record</option>
+              <option value="biosecurity">Biosecurity &amp; Disease Audit</option>
+            </select>
+            <select class="filter-select" id="reportRangeSelect">
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="crop">Full Crop Cycle (DOC 1 &ndash; 68)</option>
+            </select>
+            <select class="filter-select" id="reportPondSelect">
+              <option value="ALL">All Registered Ponds (20)</option>
               <option value="pond-01">Pond 1</option>
               <option value="pond-02">Pond 2</option>
               <option value="pond-03">Pond 3</option>
               <option value="pond-04">Pond 4</option>
             </select>
-            <button class="btn-primary-blue" id="btnRunDryRun">Run Advisory Dry-Run</button>
           </div>
-          <div id="dryRunResultOutput" style="background: #081421; padding: 14px; border-radius: 6px; font-family: monospace; font-size: 11px;">Select a pond to test safe dry-run advisory.</div>
+          <div style="font-size: 10px; color: var(--cyan-accent); font-weight: 500;" id="reportExportStatus">
+            Ready to export 20 ponds authenticated dataset.
+          </div>
+        </div>
+
+        <!-- Dataset Preview Table -->
+        <div class="panel" style="padding: 12px 14px;">
+          <div class="panel-header" style="margin-bottom: 8px;">
+            <h2 class="panel-title-text" style="font-size: 13px;">Export Dataset Preview</h2>
+            <span style="font-size: 10px; color: var(--text-muted);">Live Telemetry Data from Backend APIs</span>
+          </div>
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Pond ID</th>
+                  <th>Pond Name</th>
+                  <th>Status</th>
+                  <th>Dissolved Oxygen</th>
+                  <th>Temperature</th>
+                  <th>pH</th>
+                  <th>Salinity</th>
+                  <th>Telemetry Source</th>
+                  <th>Ingested Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="reportsPreviewTableBody">
+                <!-- Dynamically populated from state.ponds -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
-      <!-- Alerts Page -->
-      <section id="alerts" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Active Farm Alerts</h1>
-            <p>Pond threshold breaches, sensor anomalies, and maintenance logs.</p>
-          </div>
-        </div>
-        <div class="panel" style="padding: 16px;">
-          <div id="fullAlertsContainer">Loading alerts...</div>
-        </div>
-      </section>
-
-      <!-- Feeding Page -->
-      <section id="feeding" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Feed Management</h1>
-            <p>Daily feeding programs, tray inspections, and feed inventory tracking.</p>
-          </div>
-        </div>
-        <div class="panel" style="padding: 16px;">
-          <div id="feedingModuleContent">Loading feeding management records...</div>
-        </div>
-      </section>
-
-      <!-- Water Management Page -->
-      <section id="water" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Water Management &amp; Monk Sluices</h1>
-            <p>Water depths, drainage locks, and bio-containment monitoring.</p>
-          </div>
-        </div>
-        <div class="panel" style="padding: 16px;">
-          <div id="waterModuleContent">Loading water management data...</div>
-        </div>
-      </section>
-
-      <!-- Health Page -->
-      <section id="health" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Health &amp; Biosecurity</h1>
-            <p>Pathogen testing, gut health analysis, and biosecurity protocols.</p>
-          </div>
-        </div>
-        <div class="panel" style="padding: 16px;">
-          <div id="healthModuleContent">Loading health and biosecurity data...</div>
-        </div>
-      </section>
-
-      <!-- Reports Page -->
-      <section id="reports" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Telemetry &amp; Operations Reports</h1>
-            <p>Export authenticated farm telemetry datasets in CSV format.</p>
-          </div>
-          <button class="btn-primary-blue" id="btnExportCsv">Export Telemetry CSV</button>
-        </div>
-        <div class="panel" style="padding: 16px;">
-          <p style="color: var(--text-muted); margin-bottom: 10px;">
-            Exports all registered ponds and latest telemetry metrics reported by the backend API.
-          </p>
-          <div id="reportExportStatus" style="font-size: 11px; color: var(--text-secondary);">Ready to export.</div>
-        </div>
-      </section>
-
-      <!-- Settings Page -->
+      <!-- 12. SETTINGS PAGE -->
       <section id="settings" class="section-page">
-        <div class="section-page-heading">
-          <div>
-            <h1>Farm &amp; System Settings</h1>
-            <p>Gateway configuration, user permissions, and API endpoints.</p>
+        <div class="page-header-bar">
+          <div class="page-header-titles">
+            <h1>Farm Configuration &amp; Sovereign Edge Settings</h1>
+            <p>Edge gateway configuration, biological alarm thresholds, user roles, and system parameters.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary-blue" id="btnSaveSettings">Save Configuration</button>
           </div>
         </div>
-        <div class="panel" style="padding: 16px;">
-          <div id="settingsModuleContent">Loading settings...</div>
+
+        <!-- Settings Tab Navigation -->
+        <div class="settings-tabs-nav">
+          <button class="settings-tab-btn active" data-tab="tab-profile">Farm Profile</button>
+          <button class="settings-tab-btn" data-tab="tab-gateway">Sovereign Edge Gateway</button>
+          <button class="settings-tab-btn" data-tab="tab-thresholds">Biological Alarm Limits</button>
+          <button class="settings-tab-btn" data-tab="tab-users">User Access &amp; Roles</button>
+          <button class="settings-tab-btn" data-tab="tab-diagnostics">System Diagnostics</button>
+        </div>
+
+        <!-- Tab 1: Farm Profile -->
+        <div class="settings-tab-content panel" id="tab-profile" style="padding: 14px;">
+          <h2 class="panel-title-text" style="font-size: 13px; margin-bottom: 12px;">Aquaculture Facility Profile</h2>
+          <div class="settings-form-grid">
+            <div class="settings-field-box">
+              <label>Facility Name</label>
+              <input type="text" value="Gullapalli Aquaculture Farm" id="cfgFarmName">
+            </div>
+            <div class="settings-field-box">
+              <label>Farm Identifier (Slug)</label>
+              <input type="text" value="gullapalli-farm" disabled>
+            </div>
+            <div class="settings-field-box">
+              <label>Geographic Coordinates</label>
+              <input type="text" value="16.4820&deg; N, 81.6540&deg; E" id="cfgCoordinates">
+            </div>
+            <div class="settings-field-box">
+              <label>Water Source</label>
+              <select id="cfgWaterSource">
+                <option value="brackish_estuary">Brackish Estuary / Creek Canal</option>
+                <option value="seawater">Direct Coastal Seawater</option>
+                <option value="borewell">Saline Borewell</option>
+              </select>
+            </div>
+            <div class="settings-field-box">
+              <label>Registered Production Ponds</label>
+              <input type="number" value="20" disabled>
+            </div>
+            <div class="settings-field-box">
+              <label>Primary Culture Species</label>
+              <input type="text" value="Litopenaeus vannamei (Pacific White)" disabled>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Sovereign Edge Gateway (hidden initially) -->
+        <div class="settings-tab-content panel" id="tab-gateway" style="padding: 14px;" hidden>
+          <h2 class="panel-title-text" style="font-size: 13px; margin-bottom: 12px;">Sovereign Edge Node Configuration</h2>
+          <div class="settings-form-grid">
+            <div class="settings-field-box">
+              <label>Edge Node Identifier</label>
+              <input type="text" value="AGY-EDGE-NODE-01" disabled>
+            </div>
+            <div class="settings-field-box">
+              <label>Firmware Version</label>
+              <input type="text" value="Aqua-Edge v3.2.0-LTS" disabled>
+            </div>
+            <div class="settings-field-box">
+              <label>Local MQTT Broker Endpoint</label>
+              <input type="text" value="mqtt://192.168.1.100:1883">
+            </div>
+            <div class="settings-field-box">
+              <label>Telemetry Heartbeat Cadence</label>
+              <select>
+                <option value="15">15 Seconds (Real-time telemetry)</option>
+                <option value="30">30 Seconds</option>
+                <option value="60">60 Seconds (Power-saving mode)</option>
+              </select>
+            </div>
+            <div class="settings-field-box">
+              <label>Local Autonomous Failover</label>
+              <select>
+                <option value="enabled">Enabled (Offline Sovereign Operation)</option>
+                <option value="disabled">Disabled (Cloud Dependent)</option>
+              </select>
+            </div>
+            <div class="settings-field-box">
+              <label>Modbus RTU Baud Rate</label>
+              <input type="text" value="9600 bps &bull; 8-N-1" disabled>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Biological Thresholds (hidden initially) -->
+        <div class="settings-tab-content panel" id="tab-thresholds" style="padding: 14px;" hidden>
+          <h2 class="panel-title-text" style="font-size: 13px; margin-bottom: 12px;">Biological Water Chemistry Alarm Limits</h2>
+          <div class="settings-form-grid">
+            <div class="settings-field-box">
+              <label>DO Critical Minimum (mg/L)</label>
+              <input type="number" step="0.1" value="3.0">
+            </div>
+            <div class="settings-field-box">
+              <label>DO Warning Threshold (mg/L)</label>
+              <input type="number" step="0.1" value="4.5">
+            </div>
+            <div class="settings-field-box">
+              <label>Water Temperature Bounds (&deg;C)</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="number" value="26.0" placeholder="Min">
+                <input type="number" value="32.0" placeholder="Max">
+              </div>
+            </div>
+            <div class="settings-field-box">
+              <label>pH Safe Range</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="number" step="0.1" value="7.5" placeholder="Min">
+                <input type="number" step="0.1" value="8.5" placeholder="Max">
+              </div>
+            </div>
+            <div class="settings-field-box">
+              <label>Salinity Safe Range (ppt)</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="number" value="15" placeholder="Min">
+                <input type="number" value="35" placeholder="Max">
+              </div>
+            </div>
+            <div class="settings-field-box">
+              <label>Max Unionized Ammonia NH3 (mg/L)</label>
+              <input type="number" step="0.01" value="0.05">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: User Roles (hidden initially) -->
+        <div class="settings-tab-content panel" id="tab-users" style="padding: 14px;" hidden>
+          <h2 class="panel-title-text" style="font-size: 13px; margin-bottom: 12px;">Authorized Farm Operators &amp; Role Permissions</h2>
+          <div class="app-table-container">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Full Name</th>
+                  <th>Assigned Role</th>
+                  <th>Permissions</th>
+                  <th>Edge Access</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>operator</strong></td>
+                  <td>Gullapalli Operator</td>
+                  <td><span class="status-badge normal">Administrator</span></td>
+                  <td>Full System Control &bull; Interlock Overrides</td>
+                  <td>Local LAN &bull; Sovereign Key</td>
+                  <td><span class="sensor-stream-tag online">&bull; Active</span></td>
+                </tr>
+                <tr>
+                  <td><strong>biologist_rao</strong></td>
+                  <td>Dr. K. Rao</td>
+                  <td><span class="status-badge normal">Lead Biologist</span></td>
+                  <td>Feed Plans &bull; Lab Logs &bull; Health Audits</td>
+                  <td>Field Tablet</td>
+                  <td><span class="sensor-stream-tag online">&bull; Active</span></td>
+                </tr>
+                <tr>
+                  <td><strong>shift_tech1</strong></td>
+                  <td>V. Kumar</td>
+                  <td><span class="status-badge normal">Pond Technician</span></td>
+                  <td>Check Trays &bull; Routine Readings</td>
+                  <td>Mobile Handheld</td>
+                  <td><span class="sensor-stream-tag online">&bull; Active</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 5: System Diagnostics (hidden initially) -->
+        <div class="settings-tab-content panel" id="tab-diagnostics" style="padding: 14px;" hidden>
+          <h2 class="panel-title-text" style="font-size: 13px; margin-bottom: 12px;">Local Edge Hardware Diagnostics</h2>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="checklist-item-card">
+              <div>
+                <strong style="color: #fff;">Edge CPU Core Temperature</strong>
+                <div style="font-size: 9.5px; color: var(--text-muted);">Quad-Core ARM Cortex &bull; Fanless Industrial Chassis</div>
+              </div>
+              <span class="sensor-stream-tag online">&bull; 44.2 &deg;C (Normal)</span>
+            </div>
+            <div class="checklist-item-card">
+              <div>
+                <strong style="color: #fff;">eMMC Flash Storage Endurance</strong>
+                <div style="font-size: 9.5px; color: var(--text-muted);">SQLite WAL Telemetry Store &bull; 32GB High Endurance</div>
+              </div>
+              <span class="sensor-stream-tag online">&bull; 12% Used</span>
+            </div>
+            <div class="checklist-item-card">
+              <div>
+                <strong style="color: #fff;">LoRaWAN Concentrator SX1302</strong>
+                <div style="font-size: 9.5px; color: var(--text-muted);">8-Channel 868/915 MHz Multi-SF Gateway</div>
+              </div>
+              <span class="sensor-stream-tag online">&bull; 0 Packet Drop</span>
+            </div>
+          </div>
         </div>
       </section>
-
     </div>
   </div>
 
-  <!-- Toast Notification -->
+<!-- Toast Notification -->
   <div id="toast" class="toast-notification" role="status" aria-live="polite"></div>
 
   <!-- Main JavaScript Bundle -->
+  <script src="/static/js/api.js?v=20261030-final"></script>
   <script src="/static/js/dashboard.js?v=20261030-final"></script>
 </body>
 </html>

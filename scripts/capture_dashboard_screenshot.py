@@ -3,7 +3,7 @@ import time
 import urllib.request
 import os
 
-PORT = 8000
+PORT = 8001
 URL = f"http://127.0.0.1:{PORT}/"
 SCREENSHOT_PATH = os.path.abspath("apps/dashboard/assets/actual_dashboard_1536x864.png")
 EDGE_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"

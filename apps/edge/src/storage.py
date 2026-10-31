@@ -12,7 +12,7 @@ import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from packages.telemetry_schema.models import (
     PondTelemetryPacket,
@@ -80,6 +80,34 @@ class SQLiteEdgeStorage:
                 CREATE TABLE IF NOT EXISTS edge_metadata (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
+                );
+            """)
+
+            # 4. Sovereign local alerts
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS edge_local_alerts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    pond_id TEXT NOT NULL,
+                    severity TEXT NOT NULL,
+                    metric TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    reading_value REAL NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+            """)
+
+            # 5. Actuator physical/simulated feedback
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS edge_actuator_feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    command_id TEXT NOT NULL,
+                    actuator_id TEXT NOT NULL,
+                    desired_state TEXT NOT NULL,
+                    verified_state TEXT NOT NULL,
+                    is_success INTEGER NOT NULL,
+                    current_amps REAL NOT NULL DEFAULT 0.0,
+                    error_message TEXT,
+                    created_at TEXT NOT NULL
                 );
             """)
 
@@ -242,4 +270,93 @@ class SQLiteEdgeStorage:
                 age = (current_time - ts).total_seconds()
                 freshness[pond_id] = max(0.0, age)
             return freshness
+
+    def save_local_alert(
+        self,
+        pond_id: str,
+        severity: str,
+        metric: str,
+        message: str,
+        reading_value: float,
+    ) -> int:
+        """Record sovereign local alert independent of cloud connectivity."""
+        now_iso = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO edge_local_alerts (pond_id, severity, metric, message, reading_value, created_at)
+                VALUES (?, ?, ?, ?, ?, ?);
+                """,
+                (pond_id, severity, metric, message, reading_value, now_iso),
+            )
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_local_alerts(self, pond_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve sovereign local alerts from SQLite WAL."""
+        with self._get_connection() as conn:
+            if pond_id:
+                cursor = conn.execute(
+                    """
+                    SELECT * FROM edge_local_alerts
+                    WHERE pond_id = ?
+                    ORDER BY id DESC LIMIT ?;
+                    """,
+                    (pond_id, limit),
+                )
+            else:
+                cursor = conn.execute(
+                    """
+                    SELECT * FROM edge_local_alerts
+                    ORDER BY id DESC LIMIT ?;
+                    """,
+                    (limit,),
+                )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def save_actuator_feedback(
+        self,
+        command_id: str,
+        actuator_id: str,
+        desired_state: str,
+        verified_state: str,
+        is_success: bool,
+        current_amps: float = 0.0,
+        error_message: Optional[str] = None,
+    ) -> int:
+        """Record contactor auxiliary feedback or simulated actuator verification."""
+        now_iso = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO edge_actuator_feedback
+                (command_id, actuator_id, desired_state, verified_state, is_success, current_amps, error_message, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                """,
+                (command_id, actuator_id, desired_state, verified_state, int(is_success), current_amps, error_message, now_iso),
+            )
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_actuator_feedback(self, actuator_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Query recorded actuator feedback logs."""
+        with self._get_connection() as conn:
+            if actuator_id:
+                cursor = conn.execute(
+                    """
+                    SELECT * FROM edge_actuator_feedback
+                    WHERE actuator_id = ?
+                    ORDER BY id DESC LIMIT ?;
+                    """,
+                    (actuator_id, limit),
+                )
+            else:
+                cursor = conn.execute(
+                    """
+                    SELECT * FROM edge_actuator_feedback
+                    ORDER BY id DESC LIMIT ?;
+                    """,
+                    (limit,),
+                )
+            return [dict(row) for row in cursor.fetchall()]
 

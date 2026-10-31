@@ -38,6 +38,7 @@ from apps.api.src.routes.feed_plans import router as feed_plans_router
 from apps.api.src.routes.expenses import router as expenses_router
 from apps.api.src.routes.edge_control import router as edge_control_router
 from apps.api.src.routes.finance import router as finance_router
+from apps.api.src.routes.sensors import router as sensors_router
 from apps.api.src.services.simulator_service import simulator_service
 
 
@@ -106,6 +107,7 @@ def create_app() -> FastAPI:
     app.include_router(expenses_router, prefix=settings.api_prefix)
     app.include_router(edge_control_router, prefix=settings.api_prefix)
     app.include_router(finance_router, prefix=settings.api_prefix)
+    app.include_router(sensors_router, prefix=settings.api_prefix)
 
     # Mount static assets and serve dashboard UI
     dashboard_dir = Path(__file__).resolve().parent.parent.parent / "dashboard"
@@ -120,3 +122,8 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("apps.api.src.main:app", host="0.0.0.0", port=settings.port, reload=True)

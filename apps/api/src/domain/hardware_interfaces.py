@@ -25,6 +25,7 @@ class SensorCapability(str, Enum):
     PH = "ph"
     SALINITY = "salinity"
     ORP = "orp"
+    TURBIDITY = "turbidity"
     WATER_LEVEL = "water_level"
 
 
@@ -44,6 +45,13 @@ class SensorMetadata(BaseModel):
     calibration_slope: float = 1.0
     is_active: bool = True
     status: str = "ONLINE"  # ONLINE, FAULTED, OFFLINE, CALIBRATING
+    manufacturer: Optional[str] = "AquaSensors Ltd"
+    model: Optional[str] = "AQ-PROBE-485"
+    serial_number: Optional[str] = None
+    calibration_expiry: Optional[datetime] = None
+    health_status: str = "HEALTHY"  # HEALTHY, DEGRADED, STALE, FAULTED, MAINTENANCE_REQUIRED
+    battery_level_pct: Optional[float] = 100.0
+    last_communication_at: Optional[datetime] = None
 
 
 class RawSensorSample(BaseModel):

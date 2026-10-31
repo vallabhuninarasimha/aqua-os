@@ -129,8 +129,8 @@ def test_system_admin_can_access_all_farms(client: TestClient, admin_headers: di
 def test_password_hashing_pbkdf2():
     """Verify passwords are never stored in plaintext and use unique salts."""
     pwd = "super_secure_farm_password"
-    hash1 = hash_password(pwd)
-    hash2 = hash_password(pwd)
+    hash1 = hash_password(pwd, iterations=100000)
+    hash2 = hash_password(pwd, iterations=100000)
 
     # Hashes must differ because salts are unique
     assert hash1 != hash2

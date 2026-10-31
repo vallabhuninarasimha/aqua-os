@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -38,6 +38,8 @@ class EdgeCommandRequest(BaseModel):
     requested_state: str = Field(..., pattern="^(ON|OFF)$")
     reason: str = Field(..., min_length=3, max_length=1000)
     max_duration_seconds: int = Field(default=300, ge=1, le=1800)
+    idempotency_key: Optional[str] = Field(default=None, max_length=64)
+    client_timestamp: Optional[datetime] = None
 
 
 def _as_dict(row: EdgeCommandORM) -> dict[str, Any]:
@@ -86,6 +88,18 @@ async def queue_edge_command(
 ) -> dict[str, Any]:
     """Record a simulated command request; never write to a physical device."""
     verify_farm_access(user, request.farm_id)
+    now = datetime.now(timezone.utc)
+
+    # 1. Command TTL Expiration Check (5 minutes = 300s)
+    if request.client_timestamp:
+        c_ts = request.client_timestamp if request.client_timestamp.tzinfo else request.client_timestamp.replace(tzinfo=timezone.utc)
+        age_seconds = (now - c_ts).total_seconds()
+        if age_seconds > 300:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Command expired: Actuator command was generated {age_seconds:.0f}s ago (maximum TTL is 300s). Re-evaluation required.",
+            )
+
     pond = pond_repository.get(farm_id=request.farm_id, pond_id=request.pond_id)
     if not pond:
         raise HTTPException(status_code=404, detail="Pond not found in the selected farm.")
@@ -99,6 +113,30 @@ async def queue_edge_command(
         ).first()
     if not equipment:
         raise HTTPException(status_code=404, detail="Actuator is not registered for this farm/pond.")
+
+    # 2. Idempotency Check
+    if request.idempotency_key:
+        past_cmds = session.query(EdgeCommandORM).filter_by(
+            farm_id=request.farm_id, pond_id=request.pond_id, actuator_id=request.actuator_id
+        ).order_by(EdgeCommandORM.created_at.desc()).limit(10).all()
+        for cmd in past_cmds:
+            try:
+                p = json.loads(cmd.payload_json or "{}")
+                if p.get("idempotency_key") == request.idempotency_key:
+                    return _as_dict(cmd)
+            except Exception:
+                pass
+
+    # 3. Anti-Rapid-Cycling Lockout Check
+    if request.actuator_type == "AERATOR" and hasattr(equipment, "last_state_change") and equipment.last_state_change:
+        lsc = equipment.last_state_change if equipment.last_state_change.tzinfo else equipment.last_state_change.replace(tzinfo=timezone.utc)
+        cycle_age = (now - lsc).total_seconds()
+        if cycle_age < 300 and equipment.desired_state == request.requested_state:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Anti-rapid-cycling lockout active: Aerator '{request.actuator_id}' already in state '{request.requested_state}'. Must wait {int(300 - cycle_age)}s before cycling.",
+            )
+
     decision = session.query(AgentDecisionORM).filter_by(
         decision_id=request.decision_id, farm_id=request.farm_id, pond_id=request.pond_id
     ).first()
@@ -118,7 +156,8 @@ async def queue_edge_command(
     command_id = str(uuid.uuid4())
     payload = {
         "reason": request.reason.strip(), "max_duration_seconds": request.max_duration_seconds,
-        "issued_by": user.user_id, "requested_at": datetime.now(timezone.utc).isoformat(),
+        "issued_by": user.user_id, "requested_at": now.isoformat(),
+        "idempotency_key": request.idempotency_key,
         "simulated": True,
     }
     result = {
