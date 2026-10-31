@@ -191,7 +191,7 @@
     const clock=$("farmTwinClock");if(clock)clock.textContent=new Date().toLocaleTimeString();const env=$("farmTwinEnvironment");if(env)env.textContent=(state.night?"Night":"Daylight")+" · 3D Digital Twin · SIMULATION";
     const target=tankObjects[state.selected].position;const r=radius;camera.position.set(controlsTarget.x+Math.sin(theta)*Math.sin(phi)*r,Math.cos(phi)*r,controlsTarget.z+Math.cos(theta)*Math.sin(phi)*r);camera.lookAt(controlsTarget);renderer.render(scene,camera);
   }
-  updateEnvironment();focusTank(0);metrics();resize();
+  updateEnvironment();tankObjects.forEach((g,i)=>g.userData.selection.material.opacity=i===0?.75:0);metrics();resize();
   window.initLiveFarmTwin=()=>{resize();metrics();};
   document.addEventListener("visibilitychange",()=>{if(document.hidden)cancelAnimationFrame(raf);else{last=0;raf=requestAnimationFrame(animate);}});
   raf=requestAnimationFrame(animate);
