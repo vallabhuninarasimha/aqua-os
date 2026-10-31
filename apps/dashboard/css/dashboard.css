@@ -4339,3 +4339,10 @@ input, select {
     grid-template-columns: 1fr;
   }
 }
+
+/* Interactive WebGL Digital Twin viewport */
+.live-farm-stage { position:relative; min-height:560px; height:min(68vh,760px); overflow:hidden; isolation:isolate; background:#071522; }
+#aquaFarmTwinCanvas { display:block; width:100%; height:100%; min-height:560px; touch-action:none; cursor:grab; outline:none; }
+#aquaFarmTwinCanvas:active { cursor:grabbing; }
+.live-farm-load-error { position:absolute; inset:0; display:grid; place-items:center; padding:24px; color:#ffd28a; background:rgba(4,15,25,.94); text-align:center; z-index:5; }
+@media(max-width:700px) { .live-farm-stage { height:62vh; min-height:460px; } #aquaFarmTwinCanvas { min-height:460px; } }
