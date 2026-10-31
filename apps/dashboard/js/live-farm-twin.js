@@ -86,19 +86,50 @@
     const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));s.scale.set(5.6,1.05,1);return s;
   }
   function makeAerator(group,index){
-    const g=new THREE.Group();g.position.set(-4.3+index*2.85,.95,3.25);group.add(g);
-    const motor=new THREE.Mesh(new THREE.BoxGeometry(.72,.55,.8),steel);motor.position.y=.65;motor.castShadow=true;g.add(motor);
-    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.65,16),steel);shaft.rotation.z=Math.PI/2;shaft.position.set(0,.48,0);g.add(shaft);
-    const rotor=new THREE.Group();rotor.position.set(0,.12,0);g.add(rotor);
-    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,.32,20),mat(0xd3e0e2,.35,.55));hub.rotation.z=Math.PI/2;rotor.add(hub);
-    const bladeMat=mat(0xb9c9ce,.38,.55);
-    for(let b=0;b<8;b++){const blade=new THREE.Mesh(new THREE.BoxGeometry(.16,1.12,.52),bladeMat);blade.position.y=.58;blade.rotation.x=.12;blade.rotation.z=b*Math.PI/4;blade.castShadow=true;rotor.add(blade);}
-    const guard=new THREE.Mesh(new THREE.TorusGeometry(.95,.045,8,48),steel);guard.position.x=.08;guard.rotation.y=Math.PI/2;g.add(guard);
-    const splash=new THREE.Mesh(new THREE.TorusGeometry(.82,.055,8,48),new THREE.MeshBasicMaterial({color:0x9beaff,transparent:true,opacity:.55}));splash.position.set(0,-.06,.08);splash.rotation.x=Math.PI/2;g.add(splash);
-    const light=new THREE.PointLight(0x38c8ed,.7,3);light.position.set(0,1.25,0);g.add(light);
-    return {rotor,splash,light,group:g};
+    // Four independent, floating paddlewheel units per tank. The wheel axis and
+    // blade pitch are consistent so all units drive circulation in one direction.
+    const spots=[[-4.15,-2.05],[4.15,-2.05],[-4.15,2.05],[4.15,2.05]];
+    const [px,pz]=spots[index];
+    const g=new THREE.Group();g.position.set(px,0,pz);group.add(g);
+    const floatMat=mat(0x0878c7,.32,.08), steelMat=mat(0x607985,.38,.72);
+    // Twin sealed floats, cross braces and raised motor housing.
+    for(const side of [-1,1]){
+      const float=new THREE.Mesh(new THREE.CapsuleGeometry(.34,1.55,5,12),floatMat);
+      float.rotation.z=Math.PI/2;float.position.set(side*.82,.12,0);float.scale.set(1,1,.82);
+      float.castShadow=true;float.receiveShadow=true;g.add(float);
+    }
+    const frame=new THREE.Mesh(new THREE.BoxGeometry(2.5,.12,.18),steelMat);frame.position.y=.68;g.add(frame);
+    const motor=new THREE.Mesh(new THREE.CylinderGeometry(.32,.38,.78,20),mat(0x145a91,.42,.25));
+    motor.position.set(0,1.02,-.55);motor.castShadow=true;g.add(motor);
+    const motorCap=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.1,20),mat(0x9fb6c0,.35,.55));
+    motorCap.position.set(0,1.43,-.55);g.add(motorCap);
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,2.15,16),steelMat);
+    shaft.rotation.z=Math.PI/2;shaft.position.set(0,.94,0);g.add(shaft);
+    const rotor=new THREE.Group();rotor.position.set(0,.94,0);g.add(rotor);
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.34,20),mat(0xd5e2e6,.3,.6));
+    hub.rotation.z=Math.PI/2;rotor.add(hub);
+    const bladeMat=mat(0xe5bd38,.48,.18);
+    for(let n=0;n<10;n++){
+      const blade=new THREE.Mesh(new THREE.BoxGeometry(.13,1.08,.56),bladeMat);
+      blade.position.y=.68;blade.rotation.x=.10;blade.rotation.z=n*Math.PI/5;
+      blade.castShadow=true;rotor.add(blade);
+    }
+    // Guard rails and a submerged paddle arc make the water contact readable.
+    for(const side of [-1,1]){
+      const post=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.78,10),steelMat);
+      post.position.set(side*1.08,.91,0);g.add(post);
+    }
+    const splash=new THREE.Mesh(new THREE.TorusGeometry(1.05,.035,8,56),new THREE.MeshBasicMaterial({color:0xb9f3ff,transparent:true,opacity:.0}));
+    splash.position.set(0,.89,.05);splash.rotation.x=Math.PI/2;g.add(splash);
+    const droplets=[];
+    for(let n=0;n<14;n++){
+      const drop=new THREE.Mesh(new THREE.SphereGeometry(.035+(n%3)*.012,8,6),new THREE.MeshBasicMaterial({color:0xd7f8ff,transparent:true,opacity:0}));
+      g.add(drop);droplets.push(drop);
+    }
+    const light=new THREE.PointLight(0x38c8ed,.25,2.8);light.position.set(0,1.7,0);g.add(light);
+    return {rotor,splash,light,group:g,droplets,index};
   }
-  const tankPositions=[[-9,4],[9,4],[-9,13],[9,13]];
+  const tankPositions=[[-22,0],[-7.3,0],[7.3,0],[22,0]];
   tanks.forEach((t,i)=>{
     const group=new THREE.Group();group.position.set(tankPositions[i][0],0,tankPositions[i][1]);scene.add(group);
     const w=13.2,d=7.2,h=1.35;
@@ -153,7 +184,7 @@
   function animate(ts){raf=requestAnimationFrame(animate);if(!last)last=ts;const dt=Math.min((ts-last)/1000,.05);last=ts;if(!state.paused)elapsed+=dt;
     if(state.feeding&&Date.now()>state.feedUntil){state.feeding=false;if(feed)feed.textContent="▶ Start feeding demo";metrics();}
     tanks.forEach((t,i)=>{const s=elapsed;t.do=clamp(5.65+i*.08+Math.sin(s*.04+i)*.15,4.4,7.2);t.temp=clamp(28.4+i*.15+Math.sin(s*.02+i*.5)*.2,27,31.5);t.ph=clamp(7.85+i*.02+Math.sin(s*.01+i)*.02,7.5,8.4);t.sal=clamp(24+i*.3+Math.sin(s*.005+i)*.1,15,35);
-      aerators[i].forEach((a,k)=>{const on=t.fans[k]&&!state.feeding;a.rotor.rotation.x=on?elapsed*7:0;a.splash.material.opacity=on?.45+.2*Math.sin(elapsed*4+k):.04;a.light.intensity=on?1.2:.08;});
+      aerators[i].forEach((a,k)=>{const on=t.fans[k]&&!state.feeding;a.rotor.rotation.x=on?elapsed*7.5:0;a.splash.material.opacity=on?.28+.16*Math.sin(elapsed*4+k):.015;a.splash.scale.setScalar(on?1+.12*Math.sin(elapsed*5+k):.72);a.light.intensity=on?1.1:.04;a.droplets.forEach((d,n)=>{const phase=(elapsed*1.7+n*.19+k*.31)%1;d.visible=on;d.position.set(Math.sin(n*2.4+k)*(.28+phase*.9),on?.92+Math.sin(phase*Math.PI)*(.22+(n%4)*.11):.9,Math.cos(n*2.4+k)*(.22+phase*.65));d.material.opacity=on?Math.sin(phase*Math.PI)*.82:0;});});
       waterMats[i].uniforms.uTime.value=elapsed;waterMats[i].uniforms.uEnergy.value=t.fans.filter(Boolean).length/4*(state.feeding?.12:1);
     });
     resWater.material.uniforms.uTime.value=elapsed;flowDots.forEach((d,i)=>{d.position.z=-9+((elapsed*1.6+i*1.15)%13.6);d.position.y=.85+Math.sin(elapsed*2+i)*.08;});
