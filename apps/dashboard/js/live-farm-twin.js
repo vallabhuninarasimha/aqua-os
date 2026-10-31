@@ -15,7 +15,7 @@
     {id:3,name:"Tank 03",do:5.91,temp:28.2,ph:7.80,sal:23.8,nh3:.05,level:1.28,fans:[true,true,true,true]},
     {id:4,name:"Tank 04",do:4.88,temp:29.1,ph:7.95,sal:25.1,nh3:.19,level:1.20,fans:[true,true,true,true]}
   ];
-  const state={selected:0,night:(new Date().getHours()<6||new Date().getHours()>=18),feeding:false,feedUntil:0,zoom:1,paused:false};
+  const state={selected:0,view:"overview",night:(new Date().getHours()<6||new Date().getHours()>=18),feeding:false,feedUntil:0,zoom:1,paused:false};
   let THREE, renderer, scene, camera, controlsTarget, raf=0, last=0, elapsed=0, observer;
   const tankObjects=[], aerators=[], waterMats=[];
   let raycaster, pointer;
@@ -38,7 +38,7 @@
   scene=new THREE.Scene(); scene.background=new THREE.Color(state.night?0x071522:0x9ab8c4);
   scene.fog=new THREE.Fog(state.night?0x071522:0x9ab8c4,48,105);
   camera=new THREE.PerspectiveCamera(42,width()/height(),.1,250);
-  camera.position.set(0,38,64); controlsTarget=new THREE.Vector3(0,0,0);
+  camera.position.set(0,34,42); controlsTarget=new THREE.Vector3(0,0,0);
   const hemi=new THREE.HemisphereLight(0xc8eaff,0x263b2c,state.night?.75:1.35); scene.add(hemi);
   const sun=new THREE.DirectionalLight(state.night?0x9dbbe8:0xffe2b4,state.night?1.1:2.2);
   sun.position.set(-18,32,14); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
@@ -52,13 +52,13 @@
   box(58,.35,1.2,concrete,0,-.15,-17);box(58,.35,1.2,concrete,0,-.15,17);
   box(1.2,.35,34,concrete,-29,-.15,0);box(1.2,.35,34,concrete,29,-.15,0);
   // Reservoir with raised concrete walls, visible water and a transfer channel.
-  const reservoirGroup=new THREE.Group();reservoirGroup.position.set(0,0,-12);scene.add(reservoirGroup);
+  const reservoirGroup=new THREE.Group();reservoirGroup.position.set(0,0,-12);reservoirGroup.visible=false;scene.add(reservoirGroup);
   const resWater=new THREE.Mesh(new THREE.PlaneGeometry(10,5.5,32,20),waterMaterial());resWater.rotation.x=-Math.PI/2;resWater.position.y=.08;reservoirGroup.add(resWater);
   addBasinWalls(reservoirGroup,10.8,6.3,1.05);
   const resLabel=labelSprite("RESERVOIR BASIN");resLabel.position.set(0,1.8,0);reservoirGroup.add(resLabel);
   // Transfer channel from reservoir to tank manifold.
-  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,14,16),mat(0x3d8290,.35,.45));pipe.rotation.x=Math.PI/2;pipe.position.set(0,.65,-3.1);scene.add(pipe);
-  const pipePulse=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,13.6,12),mat(0x5bd4e5,.25,.3));pipePulse.rotation.x=Math.PI/2;pipePulse.position.set(0,.65,-3.1);scene.add(pipePulse);
+  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,14,16),mat(0x3d8290,.35,.45));pipe.rotation.x=Math.PI/2;pipe.position.set(0,.65,-3.1);pipe.visible=false;scene.add(pipe);
+  const pipePulse=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,13.6,12),mat(0x5bd4e5,.25,.3));pipePulse.rotation.x=Math.PI/2;pipePulse.position.set(0,.65,-3.1);pipePulse.visible=false;scene.add(pipePulse);
   function waterMaterial(){
     return new THREE.ShaderMaterial({transparent:false,uniforms:{uTime:{value:0},uNight:{value:state.night?1:0},uEnergy:{value:.65}},vertexShader:`
       varying vec2 vUv; varying vec3 vWorld;
@@ -129,7 +129,8 @@
     const light=new THREE.PointLight(0x38c8ed,.25,2.8);light.position.set(0,1.7,0);g.add(light);
     return {rotor,splash,light,group:g,droplets,index};
   }
-  const tankPositions=[[-22,0],[-7.3,0],[7.3,0],[22,0]];
+  // Compact 2x2 farm arrangement: all four tanks remain visible in overview mode.
+  const tankPositions=[[-7.8,-5.1],[7.8,-5.1],[-7.8,5.1],[7.8,5.1]];
   tanks.forEach((t,i)=>{
     const group=new THREE.Group();group.position.set(tankPositions[i][0],0,tankPositions[i][1]);scene.add(group);
     const w=13.2,d=7.2,h=1.35;
@@ -155,7 +156,14 @@
   const flowDots=[];
   for(let i=0;i<12;i++){const dot=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),new THREE.MeshBasicMaterial({color:0x9ceeff}));dot.position.set(0,.88,-9+i*.95);scene.add(dot);flowDots.push(dot);}
   raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();
-  function focusTank(index){state.selected=index;tankObjects.forEach((g,i)=>g.userData.selection.material.opacity=i===index?.75:0);const p=tankObjects[index].position;controlsTarget.set(p.x,0.7,p.z);theta=.62;phi=.82;radius=19;camera.position.set(p.x+10,10,p.z+15);camera.lookAt(controlsTarget);metrics();}
+  function fitOverview(){
+    state.view="overview";state.selected=0;tankObjects.forEach(g=>g.userData.selection.material.opacity=0);
+    controlsTarget.set(0,.6,0);camera.aspect=width()/height();camera.updateProjectionMatrix();
+    const vfov=THREE.MathUtils.degToRad(camera.fov),hfov=2*Math.atan(Math.tan(vfov/2)*camera.aspect);
+    const horizontal=29.5/(2*Math.tan(hfov/2)),vertical=18.5/(2*Math.tan(vfov/2));
+    radius=Math.max(horizontal,vertical)*1.18;theta=0;phi=.78;camera.position.set(0,radius*Math.cos(phi),radius*Math.sin(phi));camera.lookAt(controlsTarget);
+  }
+  function focusTank(index){state.view="single";state.selected=index;tankObjects.forEach((g,i)=>g.userData.selection.material.opacity=i===index?.75:0);const p=tankObjects[index].position;controlsTarget.set(p.x,.7,p.z);theta=.0;phi=.76;radius=18;camera.position.set(p.x+2,radius*Math.cos(phi),p.z+radius*Math.sin(phi));camera.lookAt(controlsTarget);metrics();}
   function metrics(){
     const t=tanks[state.selected],name=$("farmTwinSelectedName"),status=$("farmTwinSelectedStatus"),box=$("farmTwinMetrics"),eq=$("farmTwinEquipment"),assets=$("farmTwinAssetList");
     if(name)name.textContent=t.name;
@@ -169,7 +177,7 @@
     hemi.intensity=night?.75:1.35;sun.intensity=night?1.1:2.2;sun.color.set(night?0x9dbbe8:0xffe2b4);
     waterMats.forEach(m=>m.uniforms.uNight.value=night?1:0);resWater.material.uniforms.uNight.value=night?1:0;
   }
-  function resize(){const w=width(),h=height();renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+  function resize(){const w=width(),h=height();renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();if(state.view==="overview")fitOverview();}
   observer=window.ResizeObserver?new ResizeObserver(resize):null;if(observer)observer.observe(canvas);
   window.addEventListener("resize",resize);
   // Pointer orbit, pan-free selection and wheel zoom. Dragging rotates around the farm centre.
@@ -180,18 +188,18 @@
   canvas.addEventListener("wheel",e=>{e.preventDefault();radius=clamp(radius+(e.deltaY>0?2:-2),15,75);},{passive:false});
   const day=$("farmTwinDayNight");if(day)day.addEventListener("click",()=>{state.night=!state.night;updateEnvironment();});
   const feed=$("farmTwinFeed");if(feed)feed.addEventListener("click",()=>{state.feeding=!state.feeding;state.feedUntil=Date.now()+25000;feed.textContent=state.feeding?"■ Stop feeding demo":"▶ Start feeding demo";metrics();});
-  const reset=$("farmTwinReset");if(reset)reset.addEventListener("click",()=>{tanks.forEach(t=>t.fans=[true,true,true,true]);state.feeding=false;state.zoom=1;theta=.65;phi=.7;theta=.0;phi=.95;radius=66;focusTank(0);if(feed)feed.textContent="▶ Start feeding demo";metrics();});
+  const reset=$("farmTwinReset");if(reset)reset.addEventListener("click",()=>{tanks.forEach(t=>t.fans=[true,true,true,true]);state.feeding=false;state.zoom=1;fitOverview();if(feed)feed.textContent="▶ Start feeding demo";metrics();});
   function animate(ts){raf=requestAnimationFrame(animate);if(!last)last=ts;const dt=Math.min((ts-last)/1000,.05);last=ts;if(!state.paused)elapsed+=dt;
     if(state.feeding&&Date.now()>state.feedUntil){state.feeding=false;if(feed)feed.textContent="▶ Start feeding demo";metrics();}
     tanks.forEach((t,i)=>{const s=elapsed;t.do=clamp(5.65+i*.08+Math.sin(s*.04+i)*.15,4.4,7.2);t.temp=clamp(28.4+i*.15+Math.sin(s*.02+i*.5)*.2,27,31.5);t.ph=clamp(7.85+i*.02+Math.sin(s*.01+i)*.02,7.5,8.4);t.sal=clamp(24+i*.3+Math.sin(s*.005+i)*.1,15,35);
       aerators[i].forEach((a,k)=>{const on=t.fans[k]&&!state.feeding;a.rotor.rotation.x=on?elapsed*7.5:0;a.splash.material.opacity=on?.28+.16*Math.sin(elapsed*4+k):.015;a.splash.scale.setScalar(on?1+.12*Math.sin(elapsed*5+k):.72);a.light.intensity=on?1.1:.04;a.droplets.forEach((d,n)=>{const phase=(elapsed*1.7+n*.19+k*.31)%1;d.visible=on;d.position.set(Math.sin(n*2.4+k)*(.28+phase*.9),on?.92+Math.sin(phase*Math.PI)*(.22+(n%4)*.11):.9,Math.cos(n*2.4+k)*(.22+phase*.65));d.material.opacity=on?Math.sin(phase*Math.PI)*.82:0;});});
-      waterMats[i].uniforms.uTime.value=elapsed;waterMats[i].uniforms.uEnergy.value=t.fans.filter(Boolean).length/4*(state.feeding?.12:1);
+      waterMats[i].uniforms.uTime.value=elapsed;waterMats[i].uniforms.uEnergy.value=Math.max(.06,t.fans.filter(Boolean).length/4*(state.feeding?.12:1));
     });
     resWater.material.uniforms.uTime.value=elapsed;flowDots.forEach((d,i)=>{d.position.z=-9+((elapsed*1.6+i*1.15)%13.6);d.position.y=.85+Math.sin(elapsed*2+i)*.08;});
-    const clock=$("farmTwinClock");if(clock)clock.textContent=new Date().toLocaleTimeString();const env=$("farmTwinEnvironment");if(env)env.textContent=(state.night?"Night":"Daylight")+" · 3D Digital Twin · SIMULATION";
+    const clock=$("farmTwinClock");if(clock)clock.textContent=new Date().toLocaleTimeString();const env=$("farmTwinEnvironment");if(env)env.textContent=(state.night?"Night":"Daylight")+" · 2×2 Tank View · SIMULATION";
     const target=tankObjects[state.selected].position;const r=radius;camera.position.set(controlsTarget.x+Math.sin(theta)*Math.sin(phi)*r,Math.cos(phi)*r,controlsTarget.z+Math.cos(theta)*Math.sin(phi)*r);camera.lookAt(controlsTarget);renderer.render(scene,camera);
   }
-  updateEnvironment();tankObjects.forEach((g,i)=>g.userData.selection.material.opacity=i===0?.75:0);metrics();resize();
+  updateEnvironment();fitOverview();metrics();resize();
   window.initLiveFarmTwin=()=>{resize();metrics();};
   document.addEventListener("visibilitychange",()=>{if(document.hidden)cancelAnimationFrame(raf);else{last=0;raf=requestAnimationFrame(animate);}});
   raf=requestAnimationFrame(animate);
